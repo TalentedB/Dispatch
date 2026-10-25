@@ -14,6 +14,12 @@ export interface AlgorithmMeta {
 }
 
 const KNOWN: Record<string, Omit<AlgorithmMeta, 'id'>> = {
+  abdullah: {
+    label: 'Abdullah · adaptive posts',
+    short: 'Abdullah',
+    description: 'Greedy earliest arrival with queued jobs and adaptive standby posts. MILP batching is disabled in the source branch.',
+    color: themeColor('series-5'),
+  },
   greedy: {
     label: 'Greedy earliest arrival',
     short: 'Greedy',
