@@ -12,74 +12,6 @@
  ],
  "scenarios": [
   {
-   "id": "brief_1_vehicle",
-   "label": "brief 1 vehicle",
-   "group": "brief",
-   "vehicles": 1,
-   "calls": 3,
-   "traces": {
-    "greedy": "brief_1_vehicle/greedy.json",
-    "closest_idle": "brief_1_vehicle/closest_idle.json",
-    "nearest_neighbor": "brief_1_vehicle/nearest_neighbor.json",
-    "hungarian": "brief_1_vehicle/hungarian.json",
-    "abdullah": "brief_1_vehicle/abdullah.json",
-    "dispatch_greedy": "brief_1_vehicle/dispatch_greedy.json",
-    "milp": "brief_1_vehicle/milp.json",
-    "strategy4": "brief_1_vehicle/strategy4.json"
-   }
-  },
-  {
-   "id": "brief_2_vehicles",
-   "label": "brief 2 vehicles",
-   "group": "brief",
-   "vehicles": 2,
-   "calls": 3,
-   "traces": {
-    "greedy": "brief_2_vehicles/greedy.json",
-    "closest_idle": "brief_2_vehicles/closest_idle.json",
-    "nearest_neighbor": "brief_2_vehicles/nearest_neighbor.json",
-    "hungarian": "brief_2_vehicles/hungarian.json",
-    "abdullah": "brief_2_vehicles/abdullah.json",
-    "dispatch_greedy": "brief_2_vehicles/dispatch_greedy.json",
-    "milp": "brief_2_vehicles/milp.json",
-    "strategy4": "brief_2_vehicles/strategy4.json"
-   }
-  },
-  {
-   "id": "brief_small",
-   "label": "brief small",
-   "group": "brief",
-   "vehicles": 1,
-   "calls": 2,
-   "traces": {
-    "greedy": "brief_small/greedy.json",
-    "closest_idle": "brief_small/closest_idle.json",
-    "nearest_neighbor": "brief_small/nearest_neighbor.json",
-    "hungarian": "brief_small/hungarian.json",
-    "abdullah": "brief_small/abdullah.json",
-    "dispatch_greedy": "brief_small/dispatch_greedy.json",
-    "milp": "brief_small/milp.json",
-    "strategy4": "brief_small/strategy4.json"
-   }
-  },
-  {
-   "id": "edge_cases",
-   "label": "edge cases",
-   "group": "custom",
-   "vehicles": 2,
-   "calls": 7,
-   "traces": {
-    "greedy": "edge_cases/greedy.json",
-    "closest_idle": "edge_cases/closest_idle.json",
-    "nearest_neighbor": "edge_cases/nearest_neighbor.json",
-    "hungarian": "edge_cases/hungarian.json",
-    "abdullah": "edge_cases/abdullah.json",
-    "dispatch_greedy": "edge_cases/dispatch_greedy.json",
-    "milp": "edge_cases/milp.json",
-    "strategy4": "edge_cases/strategy4.json"
-   }
-  },
-  {
    "id": "big_fleet_1",
    "label": "big fleet 1",
    "group": "generated",
@@ -128,6 +60,57 @@
     "dispatch_greedy": "big_fleet_3/dispatch_greedy.json",
     "milp": "big_fleet_3/milp.json",
     "strategy4": "big_fleet_3/strategy4.json"
+   }
+  },
+  {
+   "id": "brief_1_vehicle",
+   "label": "brief 1 vehicle",
+   "group": "brief",
+   "vehicles": 1,
+   "calls": 3,
+   "traces": {
+    "greedy": "brief_1_vehicle/greedy.json",
+    "closest_idle": "brief_1_vehicle/closest_idle.json",
+    "nearest_neighbor": "brief_1_vehicle/nearest_neighbor.json",
+    "hungarian": "brief_1_vehicle/hungarian.json",
+    "abdullah": "brief_1_vehicle/abdullah.json",
+    "dispatch_greedy": "brief_1_vehicle/dispatch_greedy.json",
+    "milp": "brief_1_vehicle/milp.json",
+    "strategy4": "brief_1_vehicle/strategy4.json"
+   }
+  },
+  {
+   "id": "brief_2_vehicles",
+   "label": "brief 2 vehicles",
+   "group": "brief",
+   "vehicles": 2,
+   "calls": 3,
+   "traces": {
+    "greedy": "brief_2_vehicles/greedy.json",
+    "closest_idle": "brief_2_vehicles/closest_idle.json",
+    "nearest_neighbor": "brief_2_vehicles/nearest_neighbor.json",
+    "hungarian": "brief_2_vehicles/hungarian.json",
+    "abdullah": "brief_2_vehicles/abdullah.json",
+    "dispatch_greedy": "brief_2_vehicles/dispatch_greedy.json",
+    "milp": "brief_2_vehicles/milp.json",
+    "strategy4": "brief_2_vehicles/strategy4.json"
+   }
+  },
+  {
+   "id": "brief_small",
+   "label": "brief small",
+   "group": "brief",
+   "vehicles": 1,
+   "calls": 2,
+   "traces": {
+    "greedy": "brief_small/greedy.json",
+    "closest_idle": "brief_small/closest_idle.json",
+    "nearest_neighbor": "brief_small/nearest_neighbor.json",
+    "hungarian": "brief_small/hungarian.json",
+    "abdullah": "brief_small/abdullah.json",
+    "dispatch_greedy": "brief_small/dispatch_greedy.json",
+    "milp": "brief_small/milp.json",
+    "strategy4": "brief_small/strategy4.json"
    }
   },
   {
@@ -230,6 +213,23 @@
     "dispatch_greedy": "clustered_3/dispatch_greedy.json",
     "milp": "clustered_3/milp.json",
     "strategy4": "clustered_3/strategy4.json"
+   }
+  },
+  {
+   "id": "edge_cases",
+   "label": "edge cases",
+   "group": "custom",
+   "vehicles": 2,
+   "calls": 7,
+   "traces": {
+    "greedy": "edge_cases/greedy.json",
+    "closest_idle": "edge_cases/closest_idle.json",
+    "nearest_neighbor": "edge_cases/nearest_neighbor.json",
+    "hungarian": "edge_cases/hungarian.json",
+    "abdullah": "edge_cases/abdullah.json",
+    "dispatch_greedy": "edge_cases/dispatch_greedy.json",
+    "milp": "edge_cases/milp.json",
+    "strategy4": "edge_cases/strategy4.json"
    }
   },
   {

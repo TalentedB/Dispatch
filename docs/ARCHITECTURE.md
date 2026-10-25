@@ -393,11 +393,13 @@ Euclidean geometry. Minimize worst estimated response (center), or mean response
 (median), plus relocation_weight times
 actual remaining relocation travel and deployment_weight times vehicles moved.
 Compare with continuing existing targets; move only when the score improvement
-exceeds min_improvement. Cooldown coalesces rapid fleet/map changes. Timed checks
+exceeds min_improvement. Cooldown coalesces map changes and target refinements. Timed checks
 refresh availability at most every `availability_interval` simulation minutes
 (default 10), halving the remaining gap down to one minute near the next readiness
-time. Those planned availability checks can bypass the membership cooldown, but
-still require the configured objective improvement to move. Obsolete wakeups are
+time. Dispatches and completions that change the free fleet trigger an immediate
+coverage recalculation. The cooldown suppresses refinements only while that fleet
+is unchanged; planned availability checks also bypass it. Every recalculation
+still requires the configured objective improvement to move. Obsolete wakeups are
 ignored; no refresh loop remains once all vehicles are free. Coverage retains
 its shared computation allowance and holds targets when that allowance is exhausted.
 Actual physical
