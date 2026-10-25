@@ -1,0 +1,9 @@
+# Hand-written edge cases. Lines are deliberately out of order.
+2
+09:30 3 S 0      # zero-length job
+09:00 0 N 0 E 10 # job at the base itself
+10:00 7 N 4      # north/south only
+10:00 7 N 4      # duplicate call at the same minute and place
+10:11 2 E 5      # arrives while vehicle 0 is still out
+10:15 7W 5       # no space between distance and direction
+23:50 10 S 10 E 30 # runs past midnight

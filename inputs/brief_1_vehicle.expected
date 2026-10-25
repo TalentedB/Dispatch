@@ -1,0 +1,18 @@
+Vehicle 0: 10:45 Start route to job
+Vehicle 0: 10:45 Drive 15 minutes north and 20 minutes west
+Vehicle 0: 11:20 Start job
+Vehicle 0: 12:05 Finish job
+Vehicle 0: 12:05 Start route to job
+Vehicle 0: 12:05 Drive 17 minutes south and 23 minutes east
+Vehicle 0: 12:45 Start job
+Vehicle 0: 13:15 Finish job
+Vehicle 0: 13:15 Start route to base
+Vehicle 0: 13:15 Drive 2 minutes north and 3 minutes west
+Vehicle 0: 13:20 Arrive at base
+Vehicle 0: 16:02 Start route to job
+Vehicle 0: 16:02 Drive 4 minutes east
+Vehicle 0: 16:06 Start job
+Vehicle 0: 16:21 Finish job
+Vehicle 0: 16:21 Start route to base
+Vehicle 0: 16:21 Drive 4 minutes west
+Vehicle 0: 16:25 Arrive at base
