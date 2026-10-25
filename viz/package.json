@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "test": "node --test tests/*.test.mjs",
     "preview": "vite preview",
-    "traces": "cd .. && python -m tools.export_viz"
+    "traces": "cd .. && python3 -m tools.export_viz"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

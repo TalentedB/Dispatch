@@ -165,6 +165,23 @@
    }
   },
   {
+   "id": "city_100x100_1",
+   "label": "city 100x100 1",
+   "group": "generated",
+   "vehicles": 8,
+   "calls": 200,
+   "traces": {
+    "greedy": "city_100x100_1/greedy.json",
+    "closest_idle": "city_100x100_1/closest_idle.json",
+    "nearest_neighbor": "city_100x100_1/nearest_neighbor.json",
+    "hungarian": "city_100x100_1/hungarian.json",
+    "dispatch_greedy": "city_100x100_1/dispatch_greedy.json",
+    "milp": "city_100x100_1/milp.json",
+    "abdullah": "city_100x100_1/abdullah.json",
+    "strategy4": "city_100x100_1/strategy4.json"
+   }
+  },
+  {
    "id": "clustered_1",
    "label": "clustered 1",
    "group": "generated",
