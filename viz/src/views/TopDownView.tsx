@@ -1,45 +1,141 @@
 import { themeColor } from '@/lib/theme'
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from 'react'
-import { Map as MapIcon } from 'lucide-react'
+import { Ambulance, Check, HeartPulse, Hospital, Map as MapIcon, Siren } from 'lucide-react'
 import { OVERLAYS } from '@/overlays/registry'
 import type { Map2DContext } from '@/overlays/types'
 import { CALL_STATUS, vehicleColor } from '@/engine/status'
-import type { CallFrame } from '@/engine/sample'
+import type { Bounds, CallFrame, VehicleFrame } from '@/engine/sample'
 import { useSize } from './useSize'
 import type { ViewPlugin, ViewProps } from './types'
 
 const sy = (y: number) => -y
 
-function GridLines({ minX, maxX, minY, maxY, px }: { minX: number; maxX: number; minY: number; maxY: number; px: number }) {
-  const lines = []
-  for (let x = minX; x <= maxX; x++) {
-    const major = x % 5 === 0
-    lines.push(<line key={`x${x}`} x1={x} x2={x} y1={sy(minY)} y2={sy(maxY)}
-      stroke={x === 0 ? themeColor('map-axis') : major ? themeColor('map-major') : themeColor('map-grid')} strokeWidth={(x === 0 ? 2 : 1) * px} />)
+/** Deterministic per-block noise, so parks stay put between renders. */
+const hash = (x: number, y: number) => {
+  const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
+  return h - Math.floor(h)
+}
+
+/** One rounded rectangle as path commands (world units). */
+function roundRect(x0: number, y0: number, x1: number, y1: number, r: number) {
+  return `M${x0 + r} ${y0}H${x1 - r}A${r} ${r} 0 0 1 ${x1} ${y0 + r}V${y1 - r}A${r} ${r} 0 0 1 ${x1 - r} ${y1}` +
+    `H${x0 + r}A${r} ${r} 0 0 1 ${x0} ${y1 - r}V${y0 + r}A${r} ${r} 0 0 1 ${x0 + r} ${y0}Z`
+}
+
+/**
+ * Vehicles drive along grid lines, so the lines are streets and each unit cell is
+ * a city block. Every 5th street is a wider avenue; the axes through base are the
+ * main avenues. A few blocks are parks. Built as two paths so 80x80 maps stay cheap.
+ */
+function cityPaths({ minX, maxX, minY, maxY }: Bounds) {
+  const street = (n: number) => (n === 0 ? 0.22 : n % 5 === 0 ? 0.16 : 0.09)
+  let blocks = ''
+  let parks = ''
+  for (let x = minX; x < maxX; x++) {
+    for (let y = minY; y < maxY; y++) {
+      const d = roundRect(x + street(x), sy(y + 1) + street(y + 1), x + 1 - street(x + 1), sy(y) - street(y), 0.07)
+      if (hash(x, y) < 0.06) parks += d
+      else blocks += d
+    }
   }
-  for (let y = minY; y <= maxY; y++) {
-    const major = y % 5 === 0
-    lines.push(<line key={`y${y}`} y1={sy(y)} y2={sy(y)} x1={minX} x2={maxX}
-      stroke={y === 0 ? themeColor('map-axis') : major ? themeColor('map-major') : themeColor('map-grid')} strokeWidth={(y === 0 ? 2 : 1) * px} />)
-  }
-  return <g>{lines}</g>
+  return { blocks, parks }
+}
+
+function City({ bounds, px }: { bounds: Bounds; px: number }) {
+  const { blocks, parks } = useMemo(() => cityPaths(bounds), [bounds])
+  const { minX, maxX, minY, maxY } = bounds
+  return (
+    <g>
+      <rect x={minX} y={sy(maxY)} width={maxX - minX} height={maxY - minY} fill={themeColor('map-paper')} />
+      <path d={blocks} fill={themeColor('map-block')} stroke={themeColor('map-block-edge')} strokeWidth={px} />
+      <path d={parks} fill={themeColor('map-park')} stroke={themeColor('map-park-edge')} strokeWidth={px} />
+      <line x1={minX} x2={maxX} y1={0} y2={0} stroke={themeColor('map-major')} strokeWidth={1.5 * px} strokeDasharray={`${6 * px} ${5 * px}`} />
+      <line x1={0} x2={0} y1={sy(minY)} y2={sy(maxY)} stroke={themeColor('map-major')} strokeWidth={1.5 * px} strokeDasharray={`${6 * px} ${5 * px}`} />
+    </g>
+  )
+}
+
+/** A small numbered tag pinned to the top-right of a marker. */
+function Tag({ x, y, text, color, px }: { x: number; y: number; text: string; color: string; px: number }) {
+  const w = (text.length * 5.6 + 7) * px
+  const h = 12 * px
+  return (
+    <g style={{ pointerEvents: 'none' }}>
+      <rect x={x - h / 2} y={y - h / 2} width={w} height={h} rx={h / 2} fill={themeColor('map-paper')} stroke={color} strokeWidth={px} />
+      <text x={x - h / 2 + w / 2} y={y} textAnchor="middle" dominantBaseline="central" fontSize={8.5 * px} fontWeight={700} fill={color}
+        style={{ fontVariantNumeric: 'tabular-nums' }}>
+        {text}
+      </text>
+    </g>
+  )
+}
+
+function BaseMarker({ px }: { px: number }) {
+  const s = 24 * px
+  return (
+    <g>
+      <rect x={-s / 2 - 3 * px} y={-s / 2 - 3 * px} width={s + 6 * px} height={s + 6 * px} rx={8 * px}
+        fill={themeColor('map-paper')} opacity={0.85} />
+      <rect x={-s / 2} y={-s / 2} width={s} height={s} rx={6 * px} fill={themeColor('map-base')} />
+      <Hospital x={-8 * px} y={-8 * px} size={16 * px} color={themeColor('map-mark')} strokeWidth={2} />
+    </g>
+  )
 }
 
 function CallMarker({ c, px }: { c: CallFrame; px: number }) {
   const color = CALL_STATUS[c.status].color
   const x = c.call.x
   const y = sy(c.call.y)
-  const r = 7 * px
   if (c.status === 'done') {
-    return <circle cx={x} cy={y} r={3.5 * px} fill={color} opacity={0.45} />
+    return (
+      <g opacity={0.55}>
+        <circle cx={x} cy={y} r={5.5 * px} fill={color} />
+        <Check x={x - 3.5 * px} y={y - 3.5 * px} size={7 * px} color={themeColor('map-paper')} strokeWidth={3} />
+      </g>
+    )
   }
+  const r = 11 * px
+  const Icon = c.status === 'on_scene' ? HeartPulse : Siren
+  // On-scene progress as a ring that fills clockwise from 12 o'clock.
+  const ring = 2 * Math.PI * (r + 3 * px)
   return (
     <g>
-      <rect x={x - r} y={y - r} width={2 * r} height={2 * r} rx={2 * px} fill={color}
-        transform={`rotate(45 ${x} ${y})`} stroke={themeColor('map-paper')} strokeWidth={1.5 * px} />
-      <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={8 * px} fontWeight={800} fill={themeColor('map-paper')}>
-        {c.call.id}
-      </text>
+      {c.status === 'waiting' && (
+        <circle cx={x} cy={y} r={r} fill="none" stroke={color} strokeWidth={2 * px}>
+          <animate attributeName="r" values={`${r};${r * 2.1}`} dur="1.6s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.7;0" dur="1.6s" repeatCount="indefinite" />
+        </circle>
+      )}
+      {c.status === 'on_scene' && (
+        <>
+          <circle cx={x} cy={y} r={r + 3 * px} fill="none" stroke={color} strokeOpacity={0.2} strokeWidth={2.5 * px} />
+          <circle cx={x} cy={y} r={r + 3 * px} fill="none" stroke={color} strokeWidth={2.5 * px} strokeLinecap="round"
+            strokeDasharray={`${ring * c.progress} ${ring}`} transform={`rotate(-90 ${x} ${y})`} />
+        </>
+      )}
+      <circle cx={x} cy={y} r={r} fill={color} stroke={themeColor('map-paper')} strokeWidth={1.5 * px} />
+      <Icon x={x - 7 * px} y={y - 7 * px} size={14 * px} color={themeColor('map-paper')} strokeWidth={2.25} />
+      <Tag x={x + 11 * px} y={y - 10 * px} text={`#${c.call.id}`} color={color} px={px} />
+    </g>
+  )
+}
+
+function VehicleMarker({ v, px }: { v: VehicleFrame; px: number }) {
+  const color = vehicleColor(v.id)
+  const x = v.x
+  const y = sy(v.y)
+  const s = 22 * px
+  // The icon faces east; mirror it while the vehicle heads west.
+  const next = v.remainingPath[1]
+  const west = next !== undefined && next[0] < v.x
+  return (
+    <g>
+      <rect x={x - s / 2} y={y - s / 2} width={s} height={s} rx={6 * px} fill={color}
+        stroke={themeColor('map-paper')} strokeWidth={2 * px} />
+      <g transform={west ? `translate(${2 * x} 0) scale(-1 1)` : undefined}>
+        <Ambulance x={x - 7.5 * px} y={y - 7.5 * px} size={15 * px} color={themeColor('map-paper')} strokeWidth={2.25} />
+      </g>
+      <Tag x={x + 11 * px} y={y - 11 * px} text={`${v.id}`} color={color} px={px} />
     </g>
   )
 }
@@ -86,19 +182,13 @@ function TopDown({ prepared, frame, overlays }: ViewProps) {
       onDoubleClick={() => setView({ zoom: 1, cx: (minX + maxX) / 2, cy: sy((minY + maxY) / 2) })}>
       {width > 0 && (
         <svg role="img" aria-label="City grid showing emergency calls, base, and vehicle positions" width={width} height={height} viewBox={vb.join(' ')} className="block select-none">
-          <GridLines minX={minX} maxX={maxX} minY={minY} maxY={maxY} px={px} />
+          <City bounds={prepared.bounds} px={px} />
           {active.filter((o) => o.under).map((o) => <g key={o.id}>{o.render.map2d!(ctx)}</g>)}
-          <rect x={-9 * px} y={-9 * px} width={18 * px} height={18 * px} rx={4 * px} fill={themeColor('map-base')} stroke={themeColor('map-mark')} strokeWidth={1.5 * px} />
-          <path d={`M 0 ${-5 * px} V ${5 * px} M ${-5 * px} 0 H ${5 * px}`} stroke={themeColor('map-mark')} strokeWidth={2.5 * px} strokeLinecap="round" />
-          {frame.calls.filter((c) => c.status !== 'future').map((c) => <CallMarker key={c.call.id} c={c} px={px} />)}
-          {frame.vehicles.map((v) => (
-            <g key={v.id}>
-              <circle cx={v.x} cy={sy(v.y)} r={9 * px} fill={vehicleColor(v.id)} stroke={themeColor('map-paper')} strokeWidth={2 * px} />
-              <text x={v.x} y={sy(v.y)} textAnchor="middle" dominantBaseline="central" fontSize={9 * px} fontWeight={800} fill={themeColor('map-paper')}>
-                {v.id}
-              </text>
-            </g>
-          ))}
+          <BaseMarker px={px} />
+          {/* Done calls first so live ones draw on top. */}
+          {frame.calls.filter((c) => c.status === 'done').map((c) => <CallMarker key={c.call.id} c={c} px={px} />)}
+          {frame.calls.filter((c) => c.status !== 'future' && c.status !== 'done').map((c) => <CallMarker key={c.call.id} c={c} px={px} />)}
+          {frame.vehicles.map((v) => <VehicleMarker key={v.id} v={v} px={px} />)}
           {active.filter((o) => !o.under).map((o) => <g key={o.id}>{o.render.map2d!(ctx)}</g>)}
         </svg>
       )}
