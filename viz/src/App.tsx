@@ -122,14 +122,15 @@ export default function App() {
       <SelectTrigger className="scenario-select" aria-labelledby="scenario-label">
         <SelectValue placeholder="Scenario" />
       </SelectTrigger>
-      <SelectContent>
+      {/* Wider than the trigger so the vehicle/call counts fit beside each name. */}
+      <SelectContent className="w-auto min-w-(--anchor-width)">
         {groups.map(([g, list]) => (
           <SelectGroup key={g}>
             <SelectLabel className="capitalize">{g}</SelectLabel>
             {list.map((s) => (
               <SelectItem key={s.id} value={s.id}>
                 {s.label}
-                <span className="ml-auto pl-3 text-xs text-muted-foreground">{s.vehicles} vehicles / {s.calls} calls</span>
+                <span className="ml-auto pl-3 text-xs text-muted-foreground">{s.vehicles} {s.vehicles === 1 ? 'vehicle' : 'vehicles'} / {s.calls} calls</span>
               </SelectItem>
             ))}
           </SelectGroup>
