@@ -1,4 +1,5 @@
 """Independent checks: do not trust integrality, route extraction, or simulation."""
+
 from collections import Counter
 
 from tester.inputs import BASE, Call, manhattan
@@ -12,59 +13,95 @@ def require(condition: bool, message: str) -> None:
 
 
 def validate_plan(plan: Plan, calls: list[Call], anchors: list[Anchor], now: int) -> None:
-    lookup = {c.index: c for c in calls}
-    seen: Counter = Counter()
-    response = []
-    travel = 0
-    require(set(plan.routes) == {a.vehicle for a in anchors}, "unknown/missing vehicle")
-    for a in anchors:
-        pos, available = a.position, max(now, a.available)
-        for job in plan.routes[a.vehicle]:
-            require(job.call in lookup, "unknown call")
-            c = lookup[job.call]
-            require(job.vehicle == a.vehicle, "wrong vehicle")
-            require(job.departure >= max(available, c.time), "early departure/overlap")
-            distance = manhattan(pos, c.location)
-            require(job.start == job.departure + distance, "infeasible travel")
-            require(job.completion == job.start + c.duration, "wrong service duration")
-            seen[c.index] += 1
-            response.append(job.start - c.time)
-            travel += distance
-            available, pos = job.completion, c.location
-        travel += manhattan(pos, BASE)
-    require(seen == Counter(c.index for c in calls), "missing/duplicate call")
-    require(sum(response) == plan.total_response, "wrong total response")
-    require(max(response, default=0) == plan.max_response, "wrong maximum response")
-    require(travel == plan.travel, "wrong total travel")
+    calls_by_id = {emergency.index: emergency for emergency in calls}
+    assignment_counts: Counter[int] = Counter()
+    response_delays = []
+    total_travel = 0
+    require(set(plan.routes) == {anchor.vehicle for anchor in anchors}, "unknown/missing vehicle")
+    for anchor in anchors:
+        position, available = anchor.position, max(now, anchor.available)
+        for job in plan.routes[anchor.vehicle]:
+            require(job.call in calls_by_id, "unknown call")
+            emergency = calls_by_id[job.call]
+            require(job.vehicle == anchor.vehicle, "wrong vehicle")
+            require(job.departure >= max(available, emergency.time), "early departure/overlap")
+            travel_time = manhattan(position, emergency.location)
+            require(job.start == job.departure + travel_time, "infeasible travel")
+            require(job.completion == job.start + emergency.duration, "wrong service duration")
+            assignment_counts[emergency.index] += 1
+            response_delays.append(job.start - emergency.time)
+            total_travel += travel_time
+            available, position = job.completion, emergency.location
+        total_travel += manhattan(position, BASE)
+    require(
+        assignment_counts == Counter(emergency.index for emergency in calls),
+        "missing/duplicate call",
+    )
+    require(sum(response_delays) == plan.total_response, "wrong total response")
+    require(max(response_delays, default=0) == plan.max_response, "wrong maximum response")
+    require(total_travel == plan.travel, "wrong total travel")
 
 
-def validate_execution(emergencies: dict[int, Emergency], movements: list[Movement],
-                       fleet_size: int) -> None:
+def validate_execution(
+    emergencies: dict[int, Emergency], movements: list[Movement], fleet_size: int
+) -> None:
     """Replay exact physical segments and service intervals, independently of text."""
-    incidents = [m for m in movements if m.kind == Status.TRAVELING_TO_EMERGENCY]
-    require(Counter(m.call for m in incidents) == Counter(emergencies.keys()), "missing/duplicate dispatch")
-    for v in range(fleet_size):
-        segments = [m for m in movements if m.vehicle == v]
-        pos, last = BASE, 0
-        for m in segments:
-            require(m.start >= last and m.end >= m.start, "overlapping movement")
-            require(m.origin == pos, "teleportation")
-            require(manhattan(m.origin, m.destination) == m.end - m.start, "impossible speed")
-            pos, last = m.destination, m.end
-        require(pos == BASE, "vehicle did not return home")
-        jobs = sorted((e for e in emergencies.values() if e.vehicle == v),
-                      key=lambda e: (e.start, e.completion, e.call.index))
-        intervals = []
-        for e in jobs:
-            require(e.assignment_status == "COMPLETED", "unfinished job")
-            require(e.start >= e.call.time and e.completion == e.start + e.call.duration,
-                    "invalid service time")
-            incident = [m for m in segments if m.kind == Status.TRAVELING_TO_EMERGENCY
-                        and m.call == e.call.index and m.end == e.start and m.destination == e.call.location]
-            require(bool(incident) and any(m.start >= e.call.time for m in incident), "early dispatch")
-            intervals.append((e.start, e.completion))
-            for m in segments:
-                require(not (m.start < e.completion and m.end > e.start), "drive during service")
-        for (_, end), (start, _) in zip(intervals, intervals[1:]):
-            require(start >= end, "overlapping service")
-    require(all(e.vehicle in range(fleet_size) for e in emergencies.values()), "invalid vehicle")
+    incident_movements = [
+        movement for movement in movements if movement.kind == Status.TRAVELING_TO_EMERGENCY
+    ]
+    require(
+        Counter(movement.call for movement in incident_movements) == Counter(emergencies.keys()),
+        "missing/duplicate dispatch",
+    )
+    for vehicle_id in range(fleet_size):
+        segments = [movement for movement in movements if movement.vehicle == vehicle_id]
+        position, last_movement_end = BASE, 0
+        for movement in segments:
+            require(
+                movement.start >= last_movement_end and movement.end >= movement.start,
+                "overlapping movement",
+            )
+            require(movement.origin == position, "teleportation")
+            require(
+                manhattan(movement.origin, movement.destination) == movement.end - movement.start,
+                "impossible speed",
+            )
+            position, last_movement_end = movement.destination, movement.end
+        require(position == BASE, "vehicle did not return home")
+        vehicle_emergencies = sorted(
+            (emergency for emergency in emergencies.values() if emergency.vehicle == vehicle_id),
+            key=lambda emergency: (emergency.start, emergency.completion, emergency.call.index),
+        )
+        service_intervals = []
+        for emergency in vehicle_emergencies:
+            require(emergency.assignment_status == "COMPLETED", "unfinished job")
+            require(
+                emergency.start >= emergency.call.time
+                and emergency.completion == emergency.start + emergency.call.duration,
+                "invalid service time",
+            )
+            matching_movements = [
+                movement
+                for movement in segments
+                if movement.kind == Status.TRAVELING_TO_EMERGENCY
+                and movement.call == emergency.call.index
+                and movement.end == emergency.start
+                and movement.destination == emergency.call.location
+            ]
+            require(
+                bool(matching_movements)
+                and any(movement.start >= emergency.call.time for movement in matching_movements),
+                "early dispatch",
+            )
+            service_intervals.append((emergency.start, emergency.completion))
+            for movement in segments:
+                require(
+                    not (movement.start < emergency.completion and movement.end > emergency.start),
+                    "drive during service",
+                )
+        for (_, service_end), (service_start, _) in zip(service_intervals, service_intervals[1:]):
+            require(service_start >= service_end, "overlapping service")
+    require(
+        all(emergency.vehicle in range(fleet_size) for emergency in emergencies.values()),
+        "invalid vehicle",
+    )

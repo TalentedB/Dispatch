@@ -6,6 +6,31 @@ depend on host load and include subprocess startup; the tables are observations,
 not performance guarantees. Raw snapshots are [shipped](benchmark-shipped.txt),
 [focused](benchmark-focused.txt), and [per-solve JSON](benchmark-metrics.json).
 
+## Readability refactor verification
+
+The implementation was refactored into named DP states, focused MILP/coverage
+helpers, and explicit simulation event handlers. Public inputs, outputs,
+commitments, objectives, policy constants and budgets remain compatible.
+
+Validation: python -m pytest -q passed **153 tests in 40.80 seconds**. Eighty
+separate deterministic comparisons against archived sources matched coverage,
+DP/MILP objectives and full simulation schedules/movement/map histories.
+
+The same four-variant, 28-input comparison passed **112/112 runs**, all within
+the 20-second timeout. Maximum runtime was **14.85 seconds** (Strategy 4:
+14.80 seconds). Strategy 4 total response delay was 54,270 minutes, versus
+54,281 in the preceding snapshot; base hybrid remained 56,917. These small
+changes in time-limited traces are not evidence of a changed objective or a
+new optimization policy. No fallback was required in this rerun; large MILP
+results remained explicitly feasible rather than proven optimal.
+
+Snapshots: [summary](benchmark-readability.txt) and
+[per-case metrics](benchmark-readability-metrics.json). Reproduce with:
+
+```bash
+python -m tools.benchmark_dispatch --inputs "inputs/*.txt" "inputs/generated/*.txt" --variants greedy,milp,strategy4,greedy-staged --workers 2 --output .bench_out/readability-shipped.json
+```
+
 ## Current DP/MILP hybrid, retained plans, and cost-aware budgets
 
 Final validation: **153 tests passed in 38.57 seconds**. This is the duration

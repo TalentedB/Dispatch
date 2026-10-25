@@ -1,44 +1,63 @@
-"""Deterministic adaptive grid coverage, independent of incident scheduling."""
+"""Adaptive resting positions scored with Manhattan coverage and relocation cost."""
+
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from itertools import combinations_with_replacement
 from math import comb, isfinite, isqrt
 from time import perf_counter
+from typing import NamedTuple, Sequence
+
 import numpy as np
+
 from tester.inputs import Point, manhattan
+
+Bounds = tuple[int, int, int, int]
+COVERAGE_COMPARISON_TOLERANCE = 1e-7
+LOWER_BOUND_SAMPLE_SIZE = 32
 
 
 @dataclass(frozen=True)
 class CoverageConfig:
-    bounds: tuple[int, int, int, int] = (0, 9, 0, 9)
+    bounds: Bounds = (0, 9, 0, 9)
     objective: str = "center"
     relocation_weight: float = 0.1
     deployment_weight: float = 0.05
     min_improvement: float = 0.5
     cooldown: int = 10
-    time_limit: float = 15.0  # Compatibility: zero disables planning; no solver deadline.
+    time_limit: float = 15.0  # Legacy option: zero disables coverage planning.
     max_candidates: int = 225
     max_demand_points: int = 10000
     max_passes: int = 4
     enumeration_limit: int = 2000
     runtime_limit: float | None = None
 
-    def __post_init__(self):
-        xmin, xmax, ymin, ymax = self.bounds
-        if xmin > xmax or ymin > ymax or self.objective not in ("center", "median"):
+    def __post_init__(self) -> None:
+        min_x, max_x, min_y, max_y = self.bounds
+        if min_x > max_x or min_y > max_y or self.objective not in ("center", "median"):
             raise ValueError("invalid coverage boundaries/objective")
-        if any(not isfinite(x) or x < 0 for x in
-               (self.relocation_weight, self.deployment_weight, self.min_improvement,
-                self.cooldown, self.time_limit)):
+        costs_and_limits = (
+            self.relocation_weight,
+            self.deployment_weight,
+            self.min_improvement,
+            self.cooldown,
+            self.time_limit,
+        )
+        if any(not isfinite(value) or value < 0 for value in costs_and_limits):
             raise ValueError("coverage costs and limits must be finite and nonnegative")
-        if min(self.max_candidates, self.max_demand_points, self.max_passes) < 1 or self.enumeration_limit < 0:
+        if (
+            min(self.max_candidates, self.max_demand_points, self.max_passes) < 1
+            or self.enumeration_limit < 0
+        ):
             raise ValueError("invalid coverage work limits")
-        if self.runtime_limit is not None and (not isfinite(self.runtime_limit) or self.runtime_limit < 0):
+        if self.runtime_limit is not None and (
+            not isfinite(self.runtime_limit) or self.runtime_limit < 0
+        ):
             raise ValueError("invalid coverage runtime limit")
 
     def points(self) -> list[Point]:
-        xmin, xmax, ymin, ymax = self.bounds
-        return [Point(x, y) for x in range(xmin, xmax + 1) for y in range(ymin, ymax + 1)]
+        min_x, max_x, min_y, max_y = self.bounds
+        return [Point(x, y) for x in range(min_x, max_x + 1) for y in range(min_y, max_y + 1)]
 
 
 @dataclass
@@ -49,9 +68,9 @@ class CoveragePlan:
     relocation: int
     status: str
     seconds: float = 0.0
-    gap: float | None = None  # Compatibility; no MILP gap for grid planning.
+    gap: float | None = None  # Report compatibility; grid search has no MILP gap.
     improved: bool = False
-    bounds: tuple[int, int, int, int] | None = None
+    bounds: Bounds | None = None
     time: int | None = None
     area_shares: dict[int, float] = field(default_factory=dict)
     sampled: bool = False
@@ -59,194 +78,419 @@ class CoveragePlan:
     candidate_count: int = 0
 
 
-def expanded_bounds(bounds, point: Point):
-    xmin, xmax, ymin, ymax = bounds
-    return min(xmin, point.x), max(xmax, point.x), min(ymin, point.y), max(ymax, point.y)
+class _CoverageScore(NamedTuple):
+    objective_cost: float
+    relocation_travel: int
+    target_coordinates: tuple[tuple[int, int], ...]
+    worst_travel: int
+    average_travel: float
+
+    @property
+    def comparison_key(self) -> tuple:
+        return self.objective_cost, self.relocation_travel, self.target_coordinates
+
+
+def expanded_bounds(bounds: Bounds, point: Point) -> Bounds:
+    min_x, max_x, min_y, max_y = bounds
+    return min(min_x, point.x), max(max_x, point.x), min(min_y, point.y), max(max_y, point.y)
 
 
 def coverage_metrics(points: list[Point], sites: list[Point]) -> tuple[int, float]:
-    distances = [min(manhattan(p, s) for s in sites) for p in points]
-    return max(distances, default=0), sum(distances) / len(points)
+    nearest_distances = [min(manhattan(point, site) for site in sites) for point in points]
+    return max(nearest_distances, default=0), sum(nearest_distances) / len(points)
 
 
-def _grid(bounds, limit, *, demand=False):
-    """Full small grids; weighted representative blocks for very large maps."""
-    xmin, xmax, ymin, ymax = bounds
-    width, height = xmax-xmin+1, ymax-ymin+1
-    nx = min(width, max(1, isqrt(max(1, limit*width//height))))
-    ny = min(height, max(1, limit//nx))
-    nx = min(width, max(1, limit//ny))
-    def axis(lo, size, count):
-        if demand:
-            return [(lo+(i*size//count+(i+1)*size//count-1)//2,
-                     (i+1)*size//count-i*size//count) for i in range(count)]
-        return [(lo+i*(size-1)//max(1, count-1), 1) for i in range(count)]
-    grid = [(Point(x,y), wx*wy) for x,wx in axis(xmin,width,nx)
-            for y,wy in axis(ymin,height,ny)]
-    return [p for p,_ in grid], np.array([w for _,w in grid], dtype=float)
+def _sample_axis(
+    origin: int, length: int, sample_count: int, weighted_blocks: bool
+) -> list[tuple[int, int]]:
+    """Use weighted block midpoints for demand, or boundary-inclusive candidate sites."""
+    if weighted_blocks:
+        return [
+            (
+                origin
+                + (index * length // sample_count + (index + 1) * length // sample_count - 1) // 2,
+                (index + 1) * length // sample_count - index * length // sample_count,
+            )
+            for index in range(sample_count)
+        ]
+    return [
+        (origin + index * (length - 1) // max(1, sample_count - 1), 1)
+        for index in range(sample_count)
+    ]
 
 
-def _match(vehicles, positions, sites, config):
-    """Hungarian minimum relocation-cost matching, O(fleet^3)."""
-    n = len(vehicles)
-    costs = [[config.relocation_weight*manhattan(positions[v],s)
-              +config.deployment_weight*(positions[v]!=s) for s in sites] for v in vehicles]
+def _build_grid(
+    bounds: Bounds, point_limit: int, *, weighted_blocks: bool = False
+) -> tuple[list[Point], np.ndarray]:
+    min_x, max_x, min_y, max_y = bounds
+    width, height = max_x - min_x + 1, max_y - min_y + 1
+    x_samples = min(width, max(1, isqrt(max(1, point_limit * width // height))))
+    y_samples = min(height, max(1, point_limit // x_samples))
+    x_samples = min(width, max(1, point_limit // y_samples))
+    grid = [
+        (Point(x, y), x_weight * y_weight)
+        for x, x_weight in _sample_axis(min_x, width, x_samples, weighted_blocks)
+        for y, y_weight in _sample_axis(min_y, height, y_samples, weighted_blocks)
+    ]
+    return [point for point, _ in grid], np.array([weight for _, weight in grid], dtype=float)
+
+
+def _match_vehicles_to_targets(
+    vehicle_ids: list[int],
+    positions: dict[int, Point],
+    targets: Sequence[Point],
+    config: CoverageConfig,
+) -> list[Point]:
+    """Find a minimum-cost matching with the Hungarian augmenting-path algorithm."""
+    vehicle_count = len(vehicle_ids)
+    relocation_costs = [
+        [
+            config.relocation_weight * manhattan(positions[vehicle_id], target)
+            + config.deployment_weight * (positions[vehicle_id] != target)
+            for target in targets
+        ]
+        for vehicle_id in vehicle_ids
+    ]
     if config.relocation_weight == config.deployment_weight == 0:
-        costs = [[manhattan(positions[v],s) for s in sites] for v in vehicles]
-    u,w,matched,previous = [0.]*(n+1),[0.]*(n+1),[0]*(n+1),[0]*(n+1)
-    for i in range(1,n+1):
-        matched[0],j0 = i,0
-        best,used = [float('inf')]*(n+1),[False]*(n+1)
+        relocation_costs = [
+            [manhattan(positions[vehicle_id], target) for target in targets]
+            for vehicle_id in vehicle_ids
+        ]
+
+    vehicle_potentials = [0.0] * (vehicle_count + 1)
+    target_potentials = [0.0] * (vehicle_count + 1)
+    matched_vehicle = [0] * (vehicle_count + 1)
+    previous_target = [0] * (vehicle_count + 1)
+    # Index zero is the augmenting path's virtual starting target.
+    for vehicle_number in range(1, vehicle_count + 1):
+        matched_vehicle[0] = vehicle_number
+        current_target = 0
+        minimum_slack = [float("inf")] * (vehicle_count + 1)
+        visited_targets = [False] * (vehicle_count + 1)
         while True:
-            used[j0] = True
-            i0,delta,j1 = matched[j0],float('inf'),0
-            for j in range(1,n+1):
-                if not used[j]:
-                    cost = costs[i0-1][j-1]-u[i0]-w[j]
-                    if cost < best[j]:
-                        best[j],previous[j] = cost,j0
-                    if best[j] < delta:
-                        delta,j1 = best[j],j
-            for j in range(n+1):
-                if used[j]:
-                    u[matched[j]] += delta
-                    w[j] -= delta
+            visited_targets[current_target] = True
+            current_vehicle = matched_vehicle[current_target]
+            potential_adjustment, next_target = float("inf"), 0
+            for target_number in range(1, vehicle_count + 1):
+                if visited_targets[target_number]:
+                    continue
+                reduced_cost = (
+                    relocation_costs[current_vehicle - 1][target_number - 1]
+                    - vehicle_potentials[current_vehicle]
+                    - target_potentials[target_number]
+                )
+                if reduced_cost < minimum_slack[target_number]:
+                    minimum_slack[target_number] = reduced_cost
+                    previous_target[target_number] = current_target
+                if minimum_slack[target_number] < potential_adjustment:
+                    potential_adjustment, next_target = minimum_slack[target_number], target_number
+            for target_number in range(vehicle_count + 1):
+                if visited_targets[target_number]:
+                    vehicle_potentials[matched_vehicle[target_number]] += potential_adjustment
+                    target_potentials[target_number] -= potential_adjustment
                 else:
-                    best[j] -= delta
-            j0 = j1
-            if matched[j0] == 0:
+                    minimum_slack[target_number] -= potential_adjustment
+            current_target = next_target
+            if matched_vehicle[current_target] == 0:
                 break
-        while j0:
-            j1 = previous[j0]
-            matched[j0],j0 = matched[j1],j1
-    result = [None]*n
-    for j in range(1,n+1):
-        result[matched[j]-1] = sites[j-1]
-    return result
+        while current_target:
+            predecessor = previous_target[current_target]
+            matched_vehicle[current_target] = matched_vehicle[predecessor]
+            current_target = predecessor
+
+    assigned_targets = [targets[0]] * vehicle_count
+    for target_number in range(1, vehicle_count + 1):
+        assigned_targets[matched_vehicle[target_number] - 1] = targets[target_number - 1]
+    return assigned_targets
 
 
-def plan_coverage(positions: dict[int,Point], config: CoverageConfig = CoverageConfig(),
-                  existing_targets: dict[int,Point] | None = None) -> CoveragePlan:
-    started = perf_counter()
-    def expired():
-        return config.runtime_limit is not None and perf_counter()-started >= config.runtime_limit
-    if not positions:
-        return CoveragePlan({},0,0,0,'EMPTY',bounds=config.bounds)
-    vehicles = sorted(positions)
-    current = [existing_targets[v] if existing_targets else positions[v] for v in vehicles]
-    demand,weights = _grid(config.bounds,config.max_demand_points,demand=True)
-    candidates,_ = _grid(config.bounds,config.max_candidates)
-    xmin,xmax,ymin,ymax = config.bounds
-    candidates = sorted(set(candidates+[Point(max(xmin,min(xmax,p.x)),max(ymin,min(ymax,p.y))) for p in current]
-                            +[Point((xmin+xmax)//2,(ymin+ymax)//2)]),key=lambda p:(p.x,p.y))
-    demand_xy = np.array([(p.x,p.y) for p in demand],dtype=np.int64)
-    distance_cache = {}
-    def distances(sites):
-        for p in sites:
-            if p not in distance_cache:
-                distance_cache[p] = (np.abs(demand_xy[:,0]-p.x)
-                                     + np.abs(demand_xy[:,1]-p.y))
-        return np.stack([distance_cache[p] for p in sites])
-    candidate_distances = distances(candidates)
-    def score(sites):
-        nearest = distances(sites).min(axis=0)
-        radius,average = int(nearest.max()),float(np.sum(nearest*weights)/weights.sum())
-        travel = sum(manhattan(positions[v],p) for v,p in zip(vehicles,sites))
-        cost = ((radius if config.objective=='center' else average)+config.relocation_weight*travel
-                +config.deployment_weight*sum(positions[v]!=p for v,p in zip(vehicles,sites)))
-        return cost,travel,tuple((p.x,p.y) for p in sites),radius,average
-    old_score = score(current)
-    best,best_score,status = current,old_score,'HEURISTIC'
-    if config.time_limit == 0:
-        status = 'FALLBACK: coverage disabled'
-    elif comb(len(candidates)+len(vehicles)-1,len(vehicles)) <= config.enumeration_limit:
-        for sites in combinations_with_replacement(candidates,len(vehicles)):
-            if expired():
-                break
-            matched = _match(vehicles,positions,sites,config)
-            value = score(matched)
-            if value[:3] < best_score[:3]:
-                best,best_score = matched,value
-        status = ('OPTIMAL_ENUMERATION' if len(demand)==len(candidates)==(xmax-xmin+1)*(ymax-ymin+1)
-                  else 'EXACT_CANDIDATES')
-        if expired():
-            status = 'HEURISTIC_TIME_LIMIT'
-    else:
-        # Continue existing destinations, and independently try a dispersed start.
-        spread = [Point((xmin+xmax)//2,(ymin+ymax)//2)]
-        for _ in range(1,len(vehicles)):
-            nearest = distances(spread).min(axis=0)
-            farthest = demand[int(np.argmax(nearest))]
-            spread.append(min(candidates,key=lambda p:(manhattan(p,farthest),p.x,p.y)))
-        # Balanced rectangular partitions escape the p-center plateaus where
-        # moving either of two clustered vehicles alone cannot improve radius.
+class _CoverageSearch:
+    def __init__(
+        self,
+        positions: dict[int, Point],
+        config: CoverageConfig,
+        existing_targets: dict[int, Point] | None,
+        started_at: float,
+    ) -> None:
+        self.config = config
+        self.positions = positions
+        self.started_at = started_at
+        self.vehicle_ids = sorted(positions)
+        self.current_targets = [
+            existing_targets[vehicle_id] if existing_targets else positions[vehicle_id]
+            for vehicle_id in self.vehicle_ids
+        ]
+        self.demand_points, self.demand_weights = _build_grid(
+            config.bounds, config.max_demand_points, weighted_blocks=True
+        )
+        candidates, _ = _build_grid(config.bounds, config.max_candidates)
+        min_x, max_x, min_y, max_y = config.bounds
+        clipped_targets = [
+            Point(max(min_x, min(max_x, point.x)), max(min_y, min(max_y, point.y)))
+            for point in self.current_targets
+        ]
+        center = Point((min_x + max_x) // 2, (min_y + max_y) // 2)
+        self.candidate_targets = sorted(
+            set(candidates + clipped_targets + [center]), key=lambda point: (point.x, point.y)
+        )
+        self.demand_coordinates = np.array(
+            [(point.x, point.y) for point in self.demand_points], dtype=np.int64
+        )
+        self.distance_cache: dict[Point, np.ndarray] = {}
+        self.candidate_distances = self.distances(self.candidate_targets)
+
+    def deadline_expired(self) -> bool:
+        return (
+            self.config.runtime_limit is not None
+            and perf_counter() - self.started_at >= self.config.runtime_limit
+        )
+
+    def distances(self, targets: list[Point]) -> np.ndarray:
+        for target in targets:
+            if target not in self.distance_cache:
+                self.distance_cache[target] = np.abs(
+                    self.demand_coordinates[:, 0] - target.x
+                ) + np.abs(self.demand_coordinates[:, 1] - target.y)
+        return np.stack([self.distance_cache[target] for target in targets])
+
+    def score(self, targets: list[Point]) -> _CoverageScore:
+        nearest_distances = self.distances(targets).min(axis=0)
+        worst_travel = int(nearest_distances.max())
+        average_travel = float(
+            np.sum(nearest_distances * self.demand_weights) / self.demand_weights.sum()
+        )
+        relocation_travel = sum(
+            manhattan(self.positions[vehicle_id], target)
+            for vehicle_id, target in zip(self.vehicle_ids, targets)
+        )
+        moved_vehicles = sum(
+            self.positions[vehicle_id] != target
+            for vehicle_id, target in zip(self.vehicle_ids, targets)
+        )
+        coverage_cost = worst_travel if self.config.objective == "center" else average_travel
+        objective_cost = (
+            coverage_cost
+            + self.config.relocation_weight * relocation_travel
+            + self.config.deployment_weight * moved_vehicles
+        )
+        return _CoverageScore(
+            objective_cost,
+            relocation_travel,
+            tuple((point.x, point.y) for point in targets),
+            worst_travel,
+            average_travel,
+        )
+
+    def match_targets(self, targets: Sequence[Point]) -> list[Point]:
+        return _match_vehicles_to_targets(self.vehicle_ids, self.positions, targets, self.config)
+
+    def dispersed_targets(self) -> list[Point]:
+        min_x, max_x, min_y, max_y = self.config.bounds
+        targets = [Point((min_x + max_x) // 2, (min_y + max_y) // 2)]
+        for _ in range(1, len(self.vehicle_ids)):
+            nearest_distances = self.distances(targets).min(axis=0)
+            farthest_point = self.demand_points[int(np.argmax(nearest_distances))]
+            targets.append(
+                min(
+                    self.candidate_targets,
+                    key=lambda point: (manhattan(point, farthest_point), point.x, point.y),
+                )
+            )
+        return self.match_targets(targets)
+
+    def balanced_targets(self) -> list[Point]:
+        min_x, max_x, min_y, max_y = self.config.bounds
+        width, height = max_x - min_x + 1, max_y - min_y + 1
         partitions = []
-        width,height = xmax-xmin+1,ymax-ymin+1
-        for rows in range(1,min(len(vehicles),height)+1):
-            sites = []
-            for row in range(rows):
-                columns = len(vehicles)//rows+(row<len(vehicles)%rows)
-                lo,hi = ymin+row*height//rows,ymin+(row+1)*height//rows-1
-                for column in range(columns):
-                    left = xmin+column*width//columns
-                    right = xmin+(column+1)*width//columns-1
-                    sites.append(Point(max(xmin,min(xmax,(left+right)//2)),(lo+hi)//2))
-            partitions.append(_match(vehicles,positions,sites,config))
-        balanced = min(partitions,key=lambda sites:score(sites)[:3])
-        for sites in [list(current),_match(vehicles,positions,spread,config),balanced]:
-            if expired():
-                break
-            for _ in range(config.max_passes):
-                changed = False
-                for i,v in enumerate(vehicles):
-                    if expired():
-                        break
-                    remaining = sites[:i]+sites[i+1:]
-                    nearest = (distances(remaining).min(axis=0) if remaining else
-                               np.full(len(demand),np.iinfo(np.int64).max))
-                    relocation = np.array([manhattan(positions[v],p) for p in candidates])
-                    movement_cost = (config.relocation_weight*relocation
-                                     +config.deployment_weight*np.array([positions[v]!=p for p in candidates]))
-                    eligible = np.arange(len(candidates))
-                    if config.objective == 'center':
-                        # A subset gives a lower bound on the full worst-case
-                        # radius. Discard only candidates that cannot match the
-                        # current score, preserving all improving/tied choices.
-                        hard = np.argpartition(nearest,-min(32,len(nearest)))[-32:]
-                        bound = np.minimum(candidate_distances[:,hard],nearest[hard]).max(axis=1)
-                        current_radius = np.minimum(distances([sites[i]])[0],nearest).max()
-                        current_cost = (current_radius+config.relocation_weight*manhattan(positions[v],sites[i])
-                                        +config.deployment_weight*(positions[v]!=sites[i]))
-                        eligible = eligible[bound+movement_cost <= current_cost+1e-7]
-                    if not len(eligible):
-                        continue
-                    combined = np.minimum(candidate_distances[eligible],nearest)
-                    coverage = (combined.max(axis=1) if config.objective=='center' else
-                                np.sum(combined*weights,axis=1)/weights.sum())
-                    costs = coverage+movement_cost[eligible]
-                    order = np.lexsort((eligible,relocation[eligible],costs))
-                    candidate = candidates[int(eligible[order[0]])]
-                    proposal = sites[:i]+[candidate]+sites[i+1:]
-                    if score(proposal)[:3] < score(sites)[:3]:
-                        sites,changed = proposal,True
-                sites = _match(vehicles,positions,sites,config)
-                if not changed:
+        for row_count in range(1, min(len(self.vehicle_ids), height) + 1):
+            targets = []
+            for row in range(row_count):
+                column_count = len(self.vehicle_ids) // row_count + (
+                    row < len(self.vehicle_ids) % row_count
+                )
+                bottom = min_y + row * height // row_count
+                top = min_y + (row + 1) * height // row_count - 1
+                for column in range(column_count):
+                    left = min_x + column * width // column_count
+                    right = min_x + (column + 1) * width // column_count - 1
+                    targets.append(
+                        Point(max(min_x, min(max_x, (left + right) // 2)), (bottom + top) // 2)
+                    )
+            partitions.append(self.match_targets(targets))
+        return min(partitions, key=lambda targets: self.score(targets).comparison_key)
+
+    def best_replacement(
+        self, targets: list[Point], vehicle_index: int, vehicle_id: int
+    ) -> Point | None:
+        other_targets = targets[:vehicle_index] + targets[vehicle_index + 1 :]
+        nearest_other_vehicle = (
+            self.distances(other_targets).min(axis=0)
+            if other_targets
+            else np.full(len(self.demand_points), np.iinfo(np.int64).max)
+        )
+        relocation_distances = np.array(
+            [manhattan(self.positions[vehicle_id], point) for point in self.candidate_targets]
+        )
+        movement_costs = (
+            self.config.relocation_weight * relocation_distances
+            + self.config.deployment_weight
+            * np.array([self.positions[vehicle_id] != point for point in self.candidate_targets])
+        )
+        eligible_indices = np.arange(len(self.candidate_targets))
+        if self.config.objective == "center":
+            # A subset gives a lower bound on worst-case travel. Reject only
+            # candidates that cannot even tie the current objective cost.
+            sample_count = min(LOWER_BOUND_SAMPLE_SIZE, len(nearest_other_vehicle))
+            hardest_points = np.argpartition(nearest_other_vehicle, -sample_count)[
+                -LOWER_BOUND_SAMPLE_SIZE:
+            ]
+            lower_bounds = np.minimum(
+                self.candidate_distances[:, hardest_points], nearest_other_vehicle[hardest_points]
+            ).max(axis=1)
+            current_radius = np.minimum(
+                self.distances([targets[vehicle_index]])[0], nearest_other_vehicle
+            ).max()
+            current_cost = (
+                current_radius
+                + self.config.relocation_weight
+                * manhattan(self.positions[vehicle_id], targets[vehicle_index])
+                + self.config.deployment_weight
+                * (self.positions[vehicle_id] != targets[vehicle_index])
+            )
+            eligible_indices = eligible_indices[
+                lower_bounds + movement_costs <= current_cost + COVERAGE_COMPARISON_TOLERANCE
+            ]
+        if not len(eligible_indices):
+            return None
+        combined_distances = np.minimum(
+            self.candidate_distances[eligible_indices], nearest_other_vehicle
+        )
+        coverage_costs = (
+            combined_distances.max(axis=1)
+            if self.config.objective == "center"
+            else np.sum(combined_distances * self.demand_weights, axis=1)
+            / self.demand_weights.sum()
+        )
+        objective_costs = coverage_costs + movement_costs[eligible_indices]
+        preferred_order = np.lexsort(
+            (eligible_indices, relocation_distances[eligible_indices], objective_costs)
+        )
+        return self.candidate_targets[int(eligible_indices[preferred_order[0]])]
+
+    def improve_targets(self, targets: list[Point]) -> list[Point]:
+        for _ in range(self.config.max_passes):
+            changed = False
+            for vehicle_index, vehicle_id in enumerate(self.vehicle_ids):
+                if self.deadline_expired():
                     break
-            value = score(sites)
-            if value[:3] < best_score[:3]:
-                best,best_score = sites,value
-        if expired():
-            status = 'HEURISTIC_TIME_LIMIT'
-    improved = best_score[0] < old_score[0]-config.min_improvement-1e-7
-    if not improved and best_score[0] < old_score[0]-1e-7:
-        status = 'UNCHANGED (candidate: '+status+')'
-    chosen = best if improved else current
-    value = best_score if improved else old_score
-    matrix = distances(chosen)
-    ties = matrix==matrix.min(axis=0)
-    shares = np.sum((ties/ties.sum(axis=0))*weights,axis=1)/weights.sum()*100
-    return CoveragePlan(dict(zip(vehicles,chosen)),value[3],value[4],value[1],status,
-                        seconds=perf_counter()-started,improved=improved,bounds=config.bounds,
-                        area_shares={v:float(s) for v,s in zip(vehicles,shares)},
-                        sampled=len(demand)<(xmax-xmin+1)*(ymax-ymin+1),
-                        demand_points=len(demand),candidate_count=len(candidates))
+                replacement = self.best_replacement(targets, vehicle_index, vehicle_id)
+                if replacement is None:
+                    continue
+                proposed_targets = (
+                    targets[:vehicle_index] + [replacement] + targets[vehicle_index + 1 :]
+                )
+                if self.score(proposed_targets).comparison_key < self.score(targets).comparison_key:
+                    targets, changed = proposed_targets, True
+            targets = self.match_targets(targets)
+            if not changed:
+                break
+        return targets
+
+    def search(self, current_score: _CoverageScore) -> tuple[list[Point], _CoverageScore, str]:
+        best_targets = self.current_targets
+        best_score = current_score
+        if self.config.time_limit == 0:
+            return best_targets, best_score, "FALLBACK: coverage disabled"
+        combinations = comb(
+            len(self.candidate_targets) + len(self.vehicle_ids) - 1, len(self.vehicle_ids)
+        )
+        if combinations <= self.config.enumeration_limit:
+            for placement in combinations_with_replacement(
+                self.candidate_targets, len(self.vehicle_ids)
+            ):
+                if self.deadline_expired():
+                    break
+                targets = self.match_targets(placement)
+                score = self.score(targets)
+                if score.comparison_key < best_score.comparison_key:
+                    best_targets, best_score = targets, score
+            min_x, max_x, min_y, max_y = self.config.bounds
+            full_grid_size = (max_x - min_x + 1) * (max_y - min_y + 1)
+            status = (
+                "OPTIMAL_ENUMERATION"
+                if len(self.demand_points) == len(self.candidate_targets) == full_grid_size
+                else "EXACT_CANDIDATES"
+            )
+        else:
+            # Partition seeds escape plateaus where moving one clustered vehicle
+            # alone cannot improve the current worst-case radius.
+            starting_placements = [
+                list(self.current_targets),
+                self.dispersed_targets(),
+                self.balanced_targets(),
+            ]
+            for targets in starting_placements:
+                if self.deadline_expired():
+                    break
+                targets = self.improve_targets(targets)
+                score = self.score(targets)
+                if score.comparison_key < best_score.comparison_key:
+                    best_targets, best_score = targets, score
+            status = "HEURISTIC"
+        if self.deadline_expired():
+            status = "HEURISTIC_TIME_LIMIT"
+        return best_targets, best_score, status
+
+    def area_shares(self, targets: list[Point]) -> dict[int, float]:
+        distances = self.distances(targets)
+        nearest_vehicle_ties = distances == distances.min(axis=0)
+        shared_weights = (
+            nearest_vehicle_ties / nearest_vehicle_ties.sum(axis=0) * self.demand_weights
+        )
+        percentages = np.sum(shared_weights, axis=1) / self.demand_weights.sum() * 100
+        return {
+            vehicle_id: float(percentage)
+            for vehicle_id, percentage in zip(self.vehicle_ids, percentages)
+        }
+
+
+def plan_coverage(
+    positions: dict[int, Point],
+    config: CoverageConfig = CoverageConfig(),
+    existing_targets: dict[int, Point] | None = None,
+) -> CoveragePlan:
+    started_at = perf_counter()
+    if not positions:
+        return CoveragePlan({}, 0, 0, 0, "EMPTY", bounds=config.bounds)
+    search = _CoverageSearch(positions, config, existing_targets, started_at)
+    current_score = search.score(search.current_targets)
+    candidate_targets, candidate_score, status = search.search(current_score)
+    improved = (
+        candidate_score.objective_cost
+        < current_score.objective_cost - config.min_improvement - COVERAGE_COMPARISON_TOLERANCE
+    )
+    if (
+        not improved
+        and candidate_score.objective_cost
+        < current_score.objective_cost - COVERAGE_COMPARISON_TOLERANCE
+    ):
+        status = "UNCHANGED (candidate: " + status + ")"
+    chosen_targets = candidate_targets if improved else search.current_targets
+    chosen_score = candidate_score if improved else current_score
+    min_x, max_x, min_y, max_y = config.bounds
+    full_grid_size = (max_x - min_x + 1) * (max_y - min_y + 1)
+    area_shares = search.area_shares(chosen_targets)
+    return CoveragePlan(
+        targets=dict(zip(search.vehicle_ids, chosen_targets)),
+        radius=chosen_score.worst_travel,
+        average=chosen_score.average_travel,
+        relocation=chosen_score.relocation_travel,
+        status=status,
+        seconds=perf_counter() - started_at,
+        improved=improved,
+        bounds=config.bounds,
+        area_shares=area_shares,
+        sampled=len(search.demand_points) < full_grid_size,
+        demand_points=len(search.demand_points),
+        candidate_count=len(search.candidate_targets),
+    )

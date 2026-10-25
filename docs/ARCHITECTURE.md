@@ -39,6 +39,44 @@ the optimizers, and the CLI validates text output again with the existing
 checker before printing it. No service, language migration, or new test framework
 is introduced. The runner still accepts other languages and explicit interpreters.
 
+## Reading and maintaining the algorithms
+
+Public function names, domain fields, command-line options and report keys remain
+compatible. Private implementation names describe the scheduling concept rather
+than a tuple index or one-letter mathematical variable. Functions and variables
+use snake_case; classes use PascalCase; policy constants use UPPER_SNAKE_CASE.
+Black formats dispatch/ to 100 columns for Python 3.10; settings are in
+pyproject.toml. Black is optional development tooling, not a runtime dependency.
+
+Start at simulate(), which delegates to the private _Simulation.run() event loop.
+Named _SimulationEvent and _DispatchDecision records make ordering and replan
+triggers explicit. Separate methods handle reports, locked dispatch, arrival,
+service completion, coverage and final return. _ComputationBudget owns runtime
+accounting and names the existing policy constants; no scheduling policy changed.
+
+planning.optimize() chooses the validated starting plan and DP/MILP strategy.
+_insert_reported_call() handles bounded insertion independently of that choice.
+The DP uses _RoutePrefix, _VehicleRoute and _FleetAssignment named records;
+completion time, response delay, travel and job order are accessed by name.
+_build_vehicle_routes() and _assign_next_vehicle() separate route optimization
+from fleet allocation. _RoutingModel groups MILP variables and separates route
+constraints, timing constraints, starting solutions and result extraction.
+
+Coverage uses a named _CoverageScore and a private _CoverageSearch. Sampling,
+minimum-cost vehicle matching, coverage scoring, starting placements, candidate
+pruning and local improvement have separate descriptive functions or methods.
+Comments explain mathematical invariants and solver behavior rather than narrate
+assignments. Vectorized distance calculations and the existing search limits
+remain intact.
+
+The readability refactor passed all 153 tests and 80 deterministic comparisons
+against archived pre-refactor sources: eight coverage, twelve DP, twelve MILP,
+and 48 complete simulation cases. Those comparisons matched coverage targets,
+objective values, schedules, physical movement and reported-map histories.
+The full benchmark passed 112/112 runs, with a maximum runtime of 14.85 seconds.
+See benchmark-readability.txt and benchmark-readability-metrics.json. Time-limited
+search trajectories can vary with execution timing even when policies are the same.
+
 ## Hybrid planning and retained schedules
 
 The compatible scheduler name `milp` now selects DP for at most seven pending

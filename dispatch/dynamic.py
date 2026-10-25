@@ -1,131 +1,281 @@
-"""Exact small-queue subset DP with nondominated time/cost labels."""
-from dataclasses import replace
-from time import perf_counter
+"""Exact subset scheduling with named, nondominated partial schedules."""
 
-from tester.inputs import BASE, manhattan
-from .model import make_plan, plan_score
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
+from time import perf_counter
+from typing import NamedTuple, TypeVar
+
+from tester.inputs import BASE, Call, manhattan
+from .model import Anchor, Plan, make_plan, plan_score
+from .optimizer import SolverConfig
 from .validation import validate_plan
 
+MAX_EVALUATED_LABELS = 100_000
+DEADLINE_CHECK_INTERVAL = 128
 
-class _WorkLimit(Exception):
+
+class _RoutePrefix(NamedTuple):
+    completion_time: int
+    total_response: int
+    maximum_response: int
+    travel_time: int
+    job_order: tuple[int, ...]
+
+    @property
+    def costs(self) -> tuple[int, ...]:
+        return self.completion_time, self.total_response, self.maximum_response, self.travel_time
+
+
+class _VehicleRoute(NamedTuple):
+    total_response: int
+    maximum_response: int
+    travel_time: int
+    job_order: tuple[int, ...]
+
+    @property
+    def costs(self) -> tuple[int, ...]:
+        return self.total_response, self.maximum_response, self.travel_time
+
+
+class _FleetAssignment(NamedTuple):
+    total_response: int
+    maximum_response: int
+    travel_time: int
+    deployed_vehicles: int
+    vehicle_routes: tuple[tuple[int, ...], ...]
+
+    @property
+    def costs(self) -> tuple[int, ...]:
+        return self.total_response, self.maximum_response, self.travel_time, self.deployed_vehicles
+
+
+_Label = TypeVar("_Label", _RoutePrefix, _VehicleRoute, _FleetAssignment)
+_VehicleRoutes = dict[int, list[_VehicleRoute]]
+_FleetAssignments = dict[int, list[_FleetAssignment]]
+
+
+class _SearchLimitReached(Exception):
     pass
 
 
-def _pareto(bucket, label, dimensions):
-    """Componentwise dominance is safe under waiting and max-delay objectives."""
-    if any(all(old[k] <= label[k] for k in range(dimensions)) for old in bucket):
+@dataclass
+class _SearchBudget:
+    deadline: float
+    evaluated_labels: int = 0
+
+    def check_deadline(self) -> None:
+        if perf_counter() >= self.deadline:
+            raise _SearchLimitReached
+
+    def count_label(self) -> None:
+        self.evaluated_labels += 1
+        if self.evaluated_labels > MAX_EVALUATED_LABELS:
+            raise _SearchLimitReached
+        if self.evaluated_labels % DEADLINE_CHECK_INTERVAL == 0:
+            self.check_deadline()
+
+
+def _keep_nondominated(frontier: list[_Label], candidate: _Label) -> None:
+    """Preserve completion/response/travel tradeoffs instead of choosing one winner."""
+    candidate_costs = candidate.costs
+    if any(
+        all(previous <= proposed for previous, proposed in zip(label.costs, candidate_costs))
+        for label in frontier
+    ):
         return
-    bucket[:] = [old for old in bucket
-                 if not all(label[k] <= old[k] for k in range(dimensions))]
-    bucket.append(label)
+    frontier[:] = [
+        label
+        for label in frontier
+        if not all(proposed <= previous for proposed, previous in zip(candidate_costs, label.costs))
+    ]
+    frontier.append(candidate)
 
 
-def dynamic_plan(calls, anchors, now, config, worst_floor, incumbent):
-    started = perf_counter()
-    deadline = started + config.time_limit
-    jobs = sorted(calls, key=lambda c: c.index)
-    n, full = len(jobs), (1 << len(jobs)) - 1
-    best = incumbent
-    generated = 0
-    found_route = False
+def _keep_best_fleet_assignment(
+    frontier: list[_FleetAssignment], candidate: _FleetAssignment
+) -> None:
+    # Remaining vehicles see the same unassigned jobs. Higher accumulated
+    # response cannot recover; equal response may still trade worst delay/travel.
+    if frontier and candidate.total_response > frontier[0].total_response:
+        return
+    if frontier and candidate.total_response < frontier[0].total_response:
+        frontier.clear()
+    _keep_nondominated(frontier, candidate)
 
-    def check():
-        nonlocal generated
-        generated += 1
-        if generated > 100000 or (generated % 128 == 0 and perf_counter() >= deadline):
-            raise _WorkLimit
 
-    def fleet_insert(bucket, label):
-        # Future vehicles depend only on the allocated subset. A strictly
-        # larger accumulated primary cost cannot catch up for that same subset.
-        if bucket and label[0] > bucket[0][0]:
-            return
-        if bucket and label[0] < bucket[0][0]:
-            bucket.clear()
-        _pareto(bucket, label, 4)
+def _build_vehicle_routes(
+    jobs: list[Call],
+    anchor: Anchor,
+    current_time: int,
+    all_jobs_mask: int,
+    budget: _SearchBudget,
+) -> _VehicleRoutes:
+    prefixes: dict[tuple[int, int], list[_RoutePrefix]] = {}
+    completed_routes = {0: [_VehicleRoute(0, 0, manhattan(anchor.position, BASE), ())]}
+    for job_index, emergency in enumerate(jobs):
+        travel_time = manhattan(anchor.position, emergency.location)
+        service_start = max(current_time, anchor.available, emergency.time) + travel_time
+        response_delay = service_start - emergency.time
+        prefixes[1 << job_index, job_index] = [
+            _RoutePrefix(
+                service_start + emergency.duration,
+                response_delay,
+                response_delay,
+                travel_time,
+                (job_index,),
+            )
+        ]
 
-    # Fleet label: total response, worst delay, travel, deployments, routes.
-    fleet = {0: [(0, worst_floor, 0, 0, ())]}
-    complete = False
-    try:
-        for vehicle_index, anchor in enumerate(anchors):
-            if perf_counter() >= deadline:
-                raise _WorkLimit
-            # Route label: completion, response sum, worst delay, travel, order.
-            states = {}
-            terminals = {0: [(0, 0, manhattan(anchor.position, BASE), ())]}
-            for j, call in enumerate(jobs):
-                start = max(now, anchor.available, call.time) + manhattan(anchor.position, call.location)
-                states[1 << j, j] = [(start + call.duration, start-call.time,
-                                      start-call.time, manhattan(anchor.position, call.location), (j,))]
-            for mask in range(1, full + 1):
-                final_labels = []
-                for last in range(n):
-                    for label in states.get((mask, last), []):
-                        check()
-                        end, response, worst, travel, order = label
-                        candidate = (response, worst, travel+manhattan(jobs[last].location, BASE), order)
-                        if final_labels and response < final_labels[0][0]:
-                            final_labels.clear()
-                        if not final_labels or response == final_labels[0][0]:
-                            _pareto(final_labels, candidate, 3)
-                        remaining = full ^ mask
-                        while remaining:
-                            bit = remaining & -remaining
-                            remaining -= bit
-                            j = bit.bit_length()-1
-                            call = jobs[j]
-                            distance = manhattan(jobs[last].location, call.location)
-                            start = max(end, call.time) + distance
-                            new = (start+call.duration, response+start-call.time,
-                                   max(worst, start-call.time), travel+distance, order+(j,))
-                            _pareto(states.setdefault((mask | bit, j), []), new, 4)
-                terminals[mask] = final_labels
-            next_fleet = {}
-            for assigned, labels in fleet.items():
-                remaining = full ^ assigned
-                subset = remaining
-                while True:
-                    for label in labels:
-                        for route in terminals[subset]:
-                            check()
-                            value = (label[0]+route[0], max(label[1], route[1]),
-                                     label[2]+route[2], label[3]+bool(subset), label[4]+(route[3],))
-                            fleet_insert(next_fleet.setdefault(assigned | subset, []), value)
-                    if subset == 0:
-                        break
-                    subset = (subset-1) & remaining
-            fleet = next_fleet
-            if full in fleet:
-                # A complete feasible plan already exists with any unprocessed
-                # vehicles left unused. Keep it even if a later DP stage expires.
-                for label in fleet[full]:
-                    orders = label[4] + ((),) * (len(anchors)-vehicle_index-1)
-                    routes = {a.vehicle: [jobs[j].index for j in order]
-                              for a, order in zip(anchors, orders)}
-                    candidate = make_plan(routes, calls, anchors, now, "DP_FEASIBLE")
-                    if plan_score(candidate, config.priorities, worst_floor) <= plan_score(best, config.priorities, worst_floor):
-                        best, found_route = candidate, True
-        complete = True
-    except _WorkLimit:
-        pass
-    validate_plan(best, calls, anchors, now)
-    best = replace(best)
-    if complete:
-        best.status = "DP_OPTIMAL"
-        best.primary_optimal = best.lexicographic_optimal = True
-        best.algorithm = "dp"
-        best.fallback_reason = None
-    elif found_route:
-        best.status, best.algorithm = "DP_FEASIBLE", "dp"
-        best.primary_optimal = best.lexicographic_optimal = False
+    for served_jobs_mask in range(1, all_jobs_mask + 1):
+        terminal_frontier: list[_VehicleRoute] = []
+        for last_job_index, last_emergency in enumerate(jobs):
+            for prefix in prefixes.get((served_jobs_mask, last_job_index), []):
+                budget.count_label()
+                terminal = _VehicleRoute(
+                    prefix.total_response,
+                    prefix.maximum_response,
+                    prefix.travel_time + manhattan(last_emergency.location, BASE),
+                    prefix.job_order,
+                )
+                if (
+                    terminal_frontier
+                    and terminal.total_response < terminal_frontier[0].total_response
+                ):
+                    terminal_frontier.clear()
+                if (
+                    not terminal_frontier
+                    or terminal.total_response == terminal_frontier[0].total_response
+                ):
+                    _keep_nondominated(terminal_frontier, terminal)
+
+                unserved_jobs_mask = all_jobs_mask ^ served_jobs_mask
+                while unserved_jobs_mask:
+                    next_job_bit = unserved_jobs_mask & -unserved_jobs_mask
+                    unserved_jobs_mask -= next_job_bit
+                    next_job_index = next_job_bit.bit_length() - 1
+                    next_emergency = jobs[next_job_index]
+                    travel_time = manhattan(last_emergency.location, next_emergency.location)
+                    service_start = max(prefix.completion_time, next_emergency.time) + travel_time
+                    response_delay = service_start - next_emergency.time
+                    extension = _RoutePrefix(
+                        service_start + next_emergency.duration,
+                        prefix.total_response + response_delay,
+                        max(prefix.maximum_response, response_delay),
+                        prefix.travel_time + travel_time,
+                        prefix.job_order + (next_job_index,),
+                    )
+                    destination = served_jobs_mask | next_job_bit, next_job_index
+                    _keep_nondominated(prefixes.setdefault(destination, []), extension)
+        completed_routes[served_jobs_mask] = terminal_frontier
+    return completed_routes
+
+
+def _assign_next_vehicle(
+    assignments: _FleetAssignments,
+    vehicle_routes: _VehicleRoutes,
+    all_jobs_mask: int,
+    budget: _SearchBudget,
+) -> _FleetAssignments:
+    next_assignments: _FleetAssignments = {}
+    for assigned_jobs_mask, assignment_frontier in assignments.items():
+        remaining_jobs_mask = all_jobs_mask ^ assigned_jobs_mask
+        vehicle_jobs_mask = remaining_jobs_mask
+        while True:
+            for assignment in assignment_frontier:
+                for route in vehicle_routes[vehicle_jobs_mask]:
+                    budget.count_label()
+                    candidate = _FleetAssignment(
+                        assignment.total_response + route.total_response,
+                        max(assignment.maximum_response, route.maximum_response),
+                        assignment.travel_time + route.travel_time,
+                        assignment.deployed_vehicles + bool(vehicle_jobs_mask),
+                        assignment.vehicle_routes + (route.job_order,),
+                    )
+                    combined_jobs_mask = assigned_jobs_mask | vehicle_jobs_mask
+                    _keep_best_fleet_assignment(
+                        next_assignments.setdefault(combined_jobs_mask, []), candidate
+                    )
+            if vehicle_jobs_mask == 0:
+                break
+            vehicle_jobs_mask = (vehicle_jobs_mask - 1) & remaining_jobs_mask
+    return next_assignments
+
+
+def _reconstruct_plan(
+    assignment: _FleetAssignment,
+    jobs: list[Call],
+    calls: list[Call],
+    anchors: list[Anchor],
+    current_time: int,
+) -> Plan:
+    unused_vehicle_count = len(anchors) - len(assignment.vehicle_routes)
+    vehicle_orders = assignment.vehicle_routes + ((),) * unused_vehicle_count
+    routes = {
+        anchor.vehicle: [jobs[index].index for index in order]
+        for anchor, order in zip(anchors, vehicle_orders)
+    }
+    return make_plan(routes, calls, anchors, current_time, "DP_FEASIBLE")
+
+
+def _finish_search(
+    best_plan: Plan,
+    completed_search: bool,
+    found_complete_route: bool,
+    budget: _SearchBudget,
+    started_at: float,
+) -> Plan:
+    result = replace(best_plan)
+    if completed_search:
+        result.status = "DP_OPTIMAL"
+        result.primary_optimal = result.lexicographic_optimal = True
+        result.algorithm = "dp"
+        result.fallback_reason = None
+    elif found_complete_route:
+        result.status, result.algorithm = "DP_FEASIBLE", "dp"
+        result.primary_optimal = result.lexicographic_optimal = False
     else:
-        best.status = "FALLBACK"
-        best.fallback_reason = "DP allowance exhausted; validated incumbent retained"
-        best.primary_optimal = best.lexicographic_optimal = False
-    best.objective = best.total_response
-    best.gap = None
-    best.seconds = perf_counter()-started
-    best.dp_states = generated
-    best.stage_statuses = ["DP: exact" if complete else "DP: work/time limit"]
-    return best
+        result.status = "FALLBACK"
+        result.fallback_reason = "DP allowance exhausted; validated incumbent retained"
+        result.primary_optimal = result.lexicographic_optimal = False
+    result.objective = result.total_response
+    result.gap = None
+    result.seconds = perf_counter() - started_at
+    result.dp_states = budget.evaluated_labels
+    result.stage_statuses = ["DP: exact" if completed_search else "DP: work/time limit"]
+    return result
+
+
+def dynamic_plan(
+    calls: list[Call],
+    anchors: list[Anchor],
+    now: int,
+    config: SolverConfig,
+    worst_floor: int,
+    incumbent: Plan,
+) -> Plan:
+    started_at = perf_counter()
+    budget = _SearchBudget(started_at + config.time_limit)
+    jobs = sorted(calls, key=lambda emergency: emergency.index)
+    all_jobs_mask = (1 << len(jobs)) - 1
+    assignments = {0: [_FleetAssignment(0, worst_floor, 0, 0, ())]}
+    best_plan = incumbent
+    completed_search = found_complete_route = False
+    try:
+        for anchor in anchors:
+            budget.check_deadline()
+            vehicle_routes = _build_vehicle_routes(jobs, anchor, now, all_jobs_mask, budget)
+            assignments = _assign_next_vehicle(assignments, vehicle_routes, all_jobs_mask, budget)
+            # A complete assignment can leave later vehicles unused. Preserve
+            # it before searching them, so a deadline never loses feasible work.
+            for assignment in assignments.get(all_jobs_mask, []):
+                candidate = _reconstruct_plan(assignment, jobs, calls, anchors, now)
+                if plan_score(candidate, config.priorities, worst_floor) <= plan_score(
+                    best_plan, config.priorities, worst_floor
+                ):
+                    best_plan, found_complete_route = candidate, True
+        completed_search = True
+    except _SearchLimitReached:
+        pass
+    validate_plan(best_plan, calls, anchors, now)
+    return _finish_search(best_plan, completed_search, found_complete_route, budget, started_at)

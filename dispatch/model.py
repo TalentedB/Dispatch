@@ -1,4 +1,5 @@
 """Mutable simulation state, separate from immutable input calls and solver plans."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -27,13 +28,15 @@ class Movement:
 
     def position(self, time: int) -> Point:
         """Travel x first, then y; clamp to the actual traversed segment."""
-        steps = max(0, min(time, self.end) - self.start)
-        dx = self.destination.x - self.origin.x
-        x_steps = min(abs(dx), steps)
-        dy = self.destination.y - self.origin.y
-        y_steps = min(abs(dy), max(0, steps - abs(dx)))
-        return Point(self.origin.x + (1 if dx >= 0 else -1) * x_steps,
-                     self.origin.y + (1 if dy >= 0 else -1) * y_steps)
+        elapsed_steps = max(0, min(time, self.end) - self.start)
+        horizontal_offset = self.destination.x - self.origin.x
+        horizontal_steps = min(abs(horizontal_offset), elapsed_steps)
+        vertical_offset = self.destination.y - self.origin.y
+        vertical_steps = min(abs(vertical_offset), max(0, elapsed_steps - abs(horizontal_offset)))
+        return Point(
+            self.origin.x + (1 if horizontal_offset >= 0 else -1) * horizontal_steps,
+            self.origin.y + (1 if vertical_offset >= 0 else -1) * vertical_steps,
+        )
 
 
 @dataclass
@@ -72,6 +75,7 @@ class Anchor:
     This is a scheduling coordinate, not the vehicle's physical destination
     or an extra geometric dimension to include in Manhattan distance.
     """
+
     vehicle: int
     position: Point
     available: int
@@ -111,29 +115,47 @@ class Plan:
 
 
 def plan_score(plan: Plan, priorities: tuple[str, ...], worst_floor: int = 0) -> tuple:
-    values = {"response": plan.total_response, "worst": max(worst_floor, plan.max_response),
-              "travel": plan.travel, "deployments": sum(bool(r) for r in plan.routes.values())}
-    return tuple(values[name] for name in priorities)
+    objective_values = {
+        "response": plan.total_response,
+        "worst": max(worst_floor, plan.max_response),
+        "travel": plan.travel,
+        "deployments": sum(bool(route) for route in plan.routes.values()),
+    }
+    return tuple(objective_values[name] for name in priorities)
 
 
-def make_plan(routes: dict[int, list[int]], calls: list[Call], anchors: list[Anchor],
-              now: int, status: str) -> Plan:
+def make_plan(
+    routes: dict[int, list[int]], calls: list[Call], anchors: list[Anchor], now: int, status: str
+) -> Plan:
     """Earliest feasible execution of fixed routes; no advance emergency dispatch."""
-    lookup = {c.index: c for c in calls}
-    result: dict[int, list[ScheduledJob]] = {}
-    response, travel = [], 0
+    calls_by_id = {emergency.index: emergency for emergency in calls}
+    scheduled_routes: dict[int, list[ScheduledJob]] = {}
+    response_delays, total_travel = [], 0
     for anchor in anchors:
-        time, pos = max(now, anchor.available), anchor.position
-        result[anchor.vehicle] = []
-        for index in routes.get(anchor.vehicle, []):
-            c = lookup[index]
-            departure = max(time, c.time)
-            distance = manhattan(pos, c.location)
-            start = departure + distance
-            result[anchor.vehicle].append(ScheduledJob(index, anchor.vehicle, departure,
-                                                       start, start + c.duration))
-            response.append(start - c.time)
-            travel += distance
-            time, pos = start + c.duration, c.location
-        travel += manhattan(pos, BASE)
-    return Plan(result, sum(response), max(response, default=0), travel, status)
+        available_time, position = max(now, anchor.available), anchor.position
+        scheduled_routes[anchor.vehicle] = []
+        for call_id in routes.get(anchor.vehicle, []):
+            emergency = calls_by_id[call_id]
+            departure_time = max(available_time, emergency.time)
+            travel_time = manhattan(position, emergency.location)
+            service_start = departure_time + travel_time
+            scheduled_routes[anchor.vehicle].append(
+                ScheduledJob(
+                    call_id,
+                    anchor.vehicle,
+                    departure_time,
+                    service_start,
+                    service_start + emergency.duration,
+                )
+            )
+            response_delays.append(service_start - emergency.time)
+            total_travel += travel_time
+            available_time, position = service_start + emergency.duration, emergency.location
+        total_travel += manhattan(position, BASE)
+    return Plan(
+        scheduled_routes,
+        sum(response_delays),
+        max(response_delays, default=0),
+        total_travel,
+        status,
+    )
