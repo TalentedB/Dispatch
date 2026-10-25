@@ -146,7 +146,8 @@ def test_coverage_matches_exhaustive_small_grid(objective, fleet):
 
 
 def test_relocation_cost_and_hysteresis_prevent_unnecessary_moves():
-    config = CoverageConfig((0, 4, 0, 0), relocation_weight=100, time_limit=3)
+    config = CoverageConfig((0, 4, 0, 0), relocation_weight=100, time_limit=3,
+                            priority="weighted")
     p = plan_coverage({0: BASE}, config)
     assert p.targets == {0: BASE} and not p.improved
     p = plan_coverage({0: Point(2, 0)}, CoverageConfig((0, 4, 0, 0), time_limit=3))
@@ -243,7 +244,8 @@ def test_grid_planner_does_not_use_a_milp_solver(monkeypatch):
 
 
 def test_equal_distance_coverage_area_is_shared_fairly():
-    plan = plan_coverage({0: BASE, 1: BASE}, CoverageConfig(relocation_weight=100))
+    plan = plan_coverage({0: BASE, 1: BASE},
+                         CoverageConfig(relocation_weight=100, priority="weighted"))
     assert plan.area_shares == {0: 50, 1: 50}
 
 
@@ -348,3 +350,15 @@ def test_default_simulation_recenters_free_vehicle_while_partner_is_still_servic
         for movement in result.movements
     )
     assert check(n, calls, result.output, allow_reposition=True).valid
+
+
+def test_ten_vehicle_initial_coverage_does_not_collapse_to_a_line():
+    config = CoverageConfig()
+    plan = plan_coverage({vehicle: BASE for vehicle in range(10)}, config)
+    comparison = [Point(x, y) for y in (-3, 3) for x in (-4, -2, 0, 2, 4)]
+    radius, average = coverage_metrics(config.points(), comparison)
+    assert plan.radius <= radius
+    assert plan.average <= average
+    assert len(set(plan.targets.values())) == 10
+    assert min(point.y for point in plan.targets.values()) < 0
+    assert max(point.y for point in plan.targets.values()) > 0

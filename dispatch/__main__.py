@@ -78,6 +78,12 @@ def main():
     )
     argument_parser.add_argument("--coverage-cooldown", type=int, default=10)
     argument_parser.add_argument(
+        "--coverage-priority",
+        choices=("coverage", "weighted"),
+        default=CoverageConfig().priority,
+        help="coverage first (default), or legacy coverage-plus-movement weighted cost",
+    )
+    argument_parser.add_argument(
         "--coverage-availability-interval",
         type=int,
         default=CoverageConfig().availability_interval,
@@ -111,6 +117,7 @@ def main():
         coverage=CoverageConfig(
             bounds=tuple(args.bounds),
             objective=args.coverage_objective,
+            priority=args.coverage_priority,
             relocation_weight=args.relocation_weight,
             deployment_weight=args.deployment_weight,
             min_improvement=args.min_coverage_improvement,

@@ -244,6 +244,7 @@ class _Simulation:
         self.coverage_wakeup_time = None
         self.availability_refresh_time: int | None = None
         self.reused_plan_count = 0
+        self.queued_plan_optimal = False
         self.skipped_coverage_count = 0
         self.coverage_bounds = expanded_bounds(config.coverage.bounds, BASE)
         self.map_history = [{"time": self.current_time, "bounds": self.coverage_bounds}]
@@ -552,8 +553,10 @@ class _Simulation:
             plan = self.plan_pending_work(pending_calls, reoptimize)
             if plan.status != "REUSED":
                 self.incident_plans.append(plan)
+                self.queued_plan_optimal = plan.primary_optimal and plan.lexicographic_optimal
         else:
             plan = Plan({vehicle.id: [] for vehicle in self.fleet}, 0, 0, 0, "EMPTY")
+            self.queued_plan_optimal = False
         self.apply_plan(plan)
         self.rebalance_idle_vehicles()
 
@@ -625,8 +628,14 @@ class _Simulation:
         if vehicle.generation != event.generation:
             return _DispatchDecision()
         if event.kind == _EventKind.SERVICE_COMPLETED:
-            reoptimize = self.has_interruptible_movement()
+            reoptimize = (
+                self.has_interruptible_movement()
+                or not self.queued_plan_optimal
+                or not vehicle.queue
+            )
             self.complete_service(vehicle)
+            # Queued jobs remain mutable. A time-limited incumbent's suffix
+            # must not become a dispatch commitment merely through plan reuse.
             return _DispatchDecision(required=True, reoptimize=reoptimize)
         free_vehicle_arrived = self.finish_movement(vehicle, event.payload)
         return _DispatchDecision(required=free_vehicle_arrived, reoptimize=free_vehicle_arrived)

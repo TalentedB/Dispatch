@@ -301,3 +301,51 @@ def test_independent_validator_rejects_corrupted_solutions():
     result.movements[0] = replace(result.movements[0], origin=Point(2, 0))
     with pytest.raises(ValueError, match="teleportation"):
         validate_execution(result.emergencies, result.movements, 1)
+
+
+def test_newly_free_vehicle_reconsiders_work_queued_behind_a_busy_partner(monkeypatch):
+    import dispatch.simulation as simulation_module
+    from dispatch.model import make_plan
+
+    original_optimize = simulation_module.optimize
+    solve_count = 0
+
+    def feasible_first_plan(calls, anchors, now, *args):
+        nonlocal solve_count
+        solve_count += 1
+        if solve_count == 1:
+            # A legal time-limited incumbent can leave a poor future assignment.
+            return make_plan({0: [0], 1: [1, 2]}, calls, anchors, now, "FEASIBLE")
+        return original_optimize(calls, anchors, now, *args)
+
+    monkeypatch.setattr(simulation_module, "optimize", feasible_first_plan)
+    count, calls = parse_input("2\n00:00 2 E 1\n00:00 2 W 10\n00:00 3 E 1\n")
+    result = simulate(count, calls, SimulationConfig())
+    assert result.emergencies[2].vehicle == 0
+    assert result.emergencies[2].start == 4
+    assert any(m.vehicle == 0 and m.start == 3 and m.call == 2
+               and m.kind == Status.TRAVELING_TO_EMERGENCY for m in result.movements)
+    assert check(count, calls, result.output, allow_reposition=True).valid
+
+
+def test_completion_reoptimizes_a_nonempty_queue_from_a_feasible_incumbent(monkeypatch):
+    import dispatch.simulation as simulation_module
+    from dispatch.model import make_plan
+
+    original_optimize = simulation_module.optimize
+    solve_count = 0
+
+    def feasible_first_plan(calls, anchors, now, *args):
+        nonlocal solve_count
+        solve_count += 1
+        if solve_count == 1:
+            return make_plan({0: [0, 1, 2], 1: [3]}, calls, anchors, now, "FEASIBLE")
+        return original_optimize(calls, anchors, now, *args)
+
+    monkeypatch.setattr(simulation_module, "optimize", feasible_first_plan)
+    count, calls = parse_input("2\n00:00 2 E 1\n00:00 10 E 1\n00:00 3 E 1\n00:00 0 E 50\n")
+    result = simulate(count, calls, SimulationConfig())
+    assert result.emergencies[2].start == 4
+    assert result.emergencies[1].start == 12
+    assert result.emergencies[3].completion == 50
+    assert check(count, calls, result.output, allow_reposition=True).valid

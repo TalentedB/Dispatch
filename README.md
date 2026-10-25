@@ -138,8 +138,10 @@ Off-base staging is enabled for the requested Strategy 4. Select `--no-staging`
 when base deployment is required. Vehicles physically drive to sites starting at
 `--start-time` (default 0); calls can interrupt them en route.
 
-The adaptive grid planner balances worst estimated response time (or mean
-response with median coverage) against relocation travel and movement count.
+The adaptive grid planner prioritizes worst estimated response time (or mean
+response with median coverage), then mean response, then relocation travel and
+movement count. Movement savings cannot outweigh better coverage. The optional
+`--coverage-priority weighted` restores the former additive tradeoff.
 All ambulances contribute: a busy vehicle contributes its remaining locked
 travel/service and known queue time plus Manhattan travel from its eventual
 ready location. Only free, unqueued vehicles receive relocation targets.

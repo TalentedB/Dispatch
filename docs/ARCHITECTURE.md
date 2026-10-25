@@ -305,11 +305,18 @@ and staging travel are interruptible; truncating one records only its actual
 distance and invalidates its old arrival event using a generation counter.
 Each incident movement carries its call ID for independent exactly-once replay.
 
-An expected completion reuses the existing queued route suffix, retimed and
-independently validated against current anchors. It does not rebuild the MILP
-unless another free vehicle has moved. New online calls, changed free positions,
+An expected completion with more jobs in that vehicle's queue can reuse its route
+suffix only when the originating plan proved both primary and lexicographic
+optimality and other free vehicles have not moved. Feasible, time-limited and
+fallback queues are reconsidered before the next dispatch, within the remaining
+run budget. Proof state survives reuse but is replaced by every new solve.
+New online calls, changed free positions,
 or relevant future departure wakeups invalidate reuse. Missing/duplicate queued
-jobs force a fresh solve. Reused routes do not receive new optimality claims or
+jobs force a fresh solve. Finishing a vehicle's last queued job also forces a
+fresh solve when pending work remains: newly free capacity must be considered
+before keeping another vehicle's future assignments or starting coverage travel.
+Locked travel and service remain excluded from reassignment. Reused routes do
+not receive new optimality claims or
 inflate solve counts. Simultaneous reports are batched. Coverage cooldown wakeups
 are coalesced and an empty resting fleet needs no coverage solve.
 
@@ -389,14 +396,18 @@ movable vehicles and `max(0,available[v]-t)+Manhattan(ready_location[v],q)` for 
 anchors. Ready locations/times include the current locked job and currently
 reported queued jobs; unreported queue locations are excluded, even offline.
 This is additive Manhattan distance in `(X,Y,Z)` where Z is busy minutes, not
-Euclidean geometry. Minimize worst estimated response (center), or mean response
-(median), plus relocation_weight times
-actual remaining relocation travel and deployment_weight times vehicles moved.
-Compare with continuing existing targets; move only when the score improvement
-exceeds min_improvement (default zero). Relocation and deployment penalties already
-charge for movement; the default accepts any net improvement rather than imposing
-a second threshold that can suppress useful short moves. A positive threshold
-remains configurable. Cooldown coalesces map changes and target refinements. Timed checks
+Euclidean geometry. The default `coverage` priority compares layouts
+lexicographically: worst estimated response (center) or mean response (median),
+then mean response to break center plateaus, then weighted relocation travel and
+movement count. Movement savings cannot buy worse coverage. This matters for
+large fleets: summing relocation penalties into response previously favored a
+line of vehicles and duplicate sites over a better spread.
+`--coverage-priority weighted` retains the former additive cost for comparisons
+or configurations that deliberately trade coverage against relocation.
+Compare with continuing existing targets; move only when primary coverage, or
+mean response at equal primary coverage, improves by more than min_improvement
+(default zero). Equal coverage alone does not trigger a movement. Cooldown
+coalesces map changes and target refinements. Timed checks
 refresh availability at most every `availability_interval` simulation minutes
 (default 10), halving the remaining gap down to one minute near the next readiness
 time. Dispatches and completions that change the free fleet trigger an immediate

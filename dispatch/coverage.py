@@ -33,11 +33,14 @@ class CoverageConfig:
     enumeration_limit: int = 2000
     runtime_limit: float | None = None
     availability_interval: int = 10
+    priority: str = "coverage"
 
     def __post_init__(self) -> None:
         min_x, max_x, min_y, max_y = self.bounds
         if min_x > max_x or min_y > max_y or self.objective not in ("center", "median"):
             raise ValueError("invalid coverage boundaries/objective")
+        if self.priority not in ("coverage", "weighted"):
+            raise ValueError("invalid coverage priority")
         costs_and_limits = (
             self.relocation_weight,
             self.deployment_weight,
@@ -89,9 +92,19 @@ class _CoverageScore(NamedTuple):
     target_coordinates: tuple[tuple[int, int], ...]
     worst_travel: int
     average_travel: float
+    coverage_first: bool
+    movement_cost: float
 
     @property
     def comparison_key(self) -> tuple:
+        if self.coverage_first:
+            return (
+                self.objective_cost,
+                self.average_travel,
+                self.movement_cost,
+                self.relocation_travel,
+                self.target_coordinates,
+            )
         return self.objective_cost, self.relocation_travel, self.target_coordinates
 
 
@@ -292,17 +305,20 @@ class _CoverageSearch:
             for vehicle_id, target in zip(self.vehicle_ids, targets)
         )
         coverage_cost = worst_travel if self.config.objective == "center" else average_travel
-        objective_cost = (
-            coverage_cost
-            + self.config.relocation_weight * relocation_travel
+        movement_cost = (
+            self.config.relocation_weight * relocation_travel
             + self.config.deployment_weight * moved_vehicles
         )
+        coverage_first = self.config.priority == "coverage"
+        objective_cost = coverage_cost if coverage_first else coverage_cost + movement_cost
         return _CoverageScore(
             objective_cost,
             relocation_travel,
             tuple((point.x, point.y) for point in targets),
             worst_travel,
             average_travel,
+            coverage_first,
+            movement_cost,
         )
 
     def match_targets(self, targets: Sequence[Point]) -> list[Point]:
@@ -382,8 +398,13 @@ class _CoverageSearch:
                 + self.config.deployment_weight
                 * (self.positions[vehicle_id] != targets[vehicle_index])
             )
+            if self.config.priority == "coverage":
+                current_cost = current_radius
+                movement_bounds = np.zeros_like(movement_costs)
+            else:
+                movement_bounds = movement_costs
             eligible_indices = eligible_indices[
-                lower_bounds + movement_costs <= current_cost + COVERAGE_COMPARISON_TOLERANCE
+                lower_bounds + movement_bounds <= current_cost + COVERAGE_COMPARISON_TOLERANCE
             ]
         if not len(eligible_indices):
             return None
@@ -396,10 +417,24 @@ class _CoverageSearch:
             else np.sum(combined_distances * self.demand_weights, axis=1)
             / self.demand_weights.sum()
         )
-        objective_costs = coverage_costs + movement_costs[eligible_indices]
-        preferred_order = np.lexsort(
-            (eligible_indices, relocation_distances[eligible_indices], objective_costs)
-        )
+        if self.config.priority == "coverage":
+            average_responses = (
+                np.sum(combined_distances * self.demand_weights, axis=1) / self.demand_weights.sum()
+            )
+            preferred_order = np.lexsort(
+                (
+                    eligible_indices,
+                    relocation_distances[eligible_indices],
+                    movement_costs[eligible_indices],
+                    average_responses,
+                    coverage_costs,
+                )
+            )
+        else:
+            objective_costs = coverage_costs + movement_costs[eligible_indices]
+            preferred_order = np.lexsort(
+                (eligible_indices, relocation_distances[eligible_indices], objective_costs)
+            )
         return self.candidate_targets[int(eligible_indices[preferred_order[0]])]
 
     def improve_targets(self, targets: list[Point]) -> list[Point]:
@@ -503,6 +538,14 @@ def plan_coverage(
         candidate_score.objective_cost
         < current_score.objective_cost - config.min_improvement - COVERAGE_COMPARISON_TOLERANCE
     )
+    if (
+        config.priority == "coverage"
+        and abs(candidate_score.objective_cost - current_score.objective_cost)
+        <= COVERAGE_COMPARISON_TOLERANCE
+        and candidate_score.average_travel
+        < current_score.average_travel - config.min_improvement - COVERAGE_COMPARISON_TOLERANCE
+    ):
+        improved = True
     if (
         not improved
         and candidate_score.objective_cost

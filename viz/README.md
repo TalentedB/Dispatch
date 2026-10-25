@@ -3,6 +3,12 @@
 A React app that replays solver schedules on the city grid: scrub through the
 day, play at any speed, switch algorithms, and run two side by side.
 
+The leaderboard opens on **Total wait**: the sum of service-start minus report
+time for every emergency across all listed scenarios, ranked smallest first.
+Totals come from individual service events, not rounded averages. Missing,
+invalid, or incomplete schedules cannot qualify for a complete total. Other
+leaderboard tabs retain their scenario-win and average-rank ordering.
+
 ```bash
 cd viz
 # Node 24+ (also required by the native TypeScript playback tests).
