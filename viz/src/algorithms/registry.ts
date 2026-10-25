@@ -1,0 +1,65 @@
+/**
+ * Display metadata for algorithms. Optional: an algorithm with no entry here still
+ * works (it gets its id as a label and a generated colour). Add an entry when you
+ * add a solver to solvers.txt to give it a nicer name and description.
+ */
+
+export interface AlgorithmMeta {
+  id: string
+  label: string
+  short: string
+  description: string
+  color: string
+}
+
+const KNOWN: Record<string, Omit<AlgorithmMeta, 'id'>> = {
+  greedy: {
+    label: 'Greedy earliest arrival',
+    short: 'Greedy',
+    description: 'Each call goes to the vehicle that can arrive soonest, including busy ones (the job is chained).',
+    color: '#f59e0b',
+  },
+  closest_idle: {
+    label: 'Closest idle, FCFS',
+    short: 'Closest idle',
+    description: 'Nearest free vehicle. If none is free, calls wait and are served oldest-first.',
+    color: '#38bdf8',
+  },
+  nearest_neighbor: {
+    label: 'Nearest neighbour',
+    short: 'Nearest nbr',
+    description: 'Nearest free vehicle. A vehicle that frees up takes the closest waiting call.',
+    color: '#34d399',
+  },
+  hungarian: {
+    label: 'Hungarian matching',
+    short: 'Hungarian',
+    description: 'Free vehicles and waiting calls are matched to minimise total distance (Kuhn-Munkres).',
+    color: '#c084fc',
+  },
+}
+
+/** Labels/descriptions carried by traces themselves (e.g. uploaded files). */
+const fromTraces: Record<string, { label?: string; description?: string }> = {}
+
+export function registerAlgorithm(id: string, meta: { label?: string; description?: string }) {
+  if (meta.label || meta.description) fromTraces[id] = { ...fromTraces[id], ...meta }
+}
+
+function hashColor(id: string): string {
+  let h = 0
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return `hsl(${h % 360} 75% 62%)`
+}
+
+export function algorithmMeta(id: string, fromTrace?: { label?: string; description?: string }): AlgorithmMeta {
+  const known = KNOWN[id]
+  fromTrace = { ...fromTraces[id], ...fromTrace }
+  return {
+    id,
+    label: fromTrace?.label ?? known?.label ?? id.replace(/_/g, ' '),
+    short: known?.short ?? fromTrace?.label ?? id.replace(/_/g, ' '),
+    description: fromTrace?.description ?? known?.description ?? 'No description provided.',
+    color: known?.color ?? hashColor(id),
+  }
+}

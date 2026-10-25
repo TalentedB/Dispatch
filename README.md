@@ -19,6 +19,20 @@ python3 -m solver inputs/brief_2_vehicles.txt --mode hungarian
 Design, research and measured results: [docs/approaches.md](docs/approaches.md).
 Compare modes on thousands of random scenarios: `python3 tools/stress.py`.
 
+## Visualizer
+
+```bash
+python3 tools/export_viz.py        # run every solver in solvers.txt on every input -> viz/public/traces/
+cd viz && npm install && npm run dev
+```
+
+A React app (shadcn/ui, three.js) that replays the schedules. It has a timeline scrubber, play and
+speed controls, any algorithm in any pane, and two algorithms side by side on a shared clock. Views:
+top-down grid, isometric 3D terrain (height = drive time to the nearest vehicle), and a Gantt timeline.
+Toggleable overlays show vehicle state, distance to the assigned emergency, time to complete,
+trails, a coverage heatmap and upcoming calls. Algorithms plug in through a JSON trace contract.
+See [viz/README.md](viz/README.md).
+
 ---
 
 # Solver Test Bench
@@ -109,10 +123,15 @@ Add your own by dropping a `.txt` into `inputs/` (plus a `.expected` if you know
 | `tester/runner.py` | Runs solver commands (with timeout), compares to `.expected` |
 | `tools/generate_inputs.py` | Deterministic random input generator |
 | `tools/stress.py` | In-process comparison of solver modes on many random scenarios |
+| `tools/export_viz.py` | Runs the solvers and writes JSON traces for the visualizer |
+| `viz/` | The visualizer (React + Vite), see `viz/README.md` |
 | `solver/` | The dispatcher: `engine.py` (rules + simulation), `algorithms/` (one file per algorithm), `render.py` |
 | `docs/approaches.md` | The four algorithms, their sources, and results |
 | `tests/` | Tests for the tester itself (`python3 -m pytest`) |
 
 ## Third-party code
 
-None at runtime. Tests use [pytest](https://pytest.org) (MIT license).
+None in the solver or tester; they use only the Python standard library. Tests use [pytest](https://pytest.org) (MIT license).
+The visualizer in `viz/` uses open-source npm packages (React, Vite, Tailwind CSS, shadcn/ui, Base UI,
+three.js, react-three-fiber, drei, lucide icons, Geist font), listed with licenses in
+[viz/README.md](viz/README.md#third-party-code).
