@@ -13,6 +13,8 @@ export const assignmentOverlay: OverlayPlugin = {
   description: 'Route each responding vehicle still has to drive.',
   icon: Route,
   defaultOn: true,
+  // Under the markers, so a route never draws across the vehicle driving it.
+  under: true,
   render: {
     map2d: ({ frame, sy, px }) =>
       frame.vehicles.filter(assigned).map((v) => {

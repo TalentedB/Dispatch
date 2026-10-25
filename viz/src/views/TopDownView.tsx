@@ -198,8 +198,6 @@ function BaseMarker({ px }: { px: number }) {
 
 /** Minutes a resolved call's check mark stays on the map, fading out. */
 const DONE_FADE = 45
-/** A waiting call's ring is full after this many minutes. */
-const WAIT_FULL = 60
 
 function callTitle(c: CallFrame, finish?: number) {
   const head = `Call #${c.call.id}`
@@ -226,9 +224,9 @@ function CallMarker({ c, px, t, finish }: { c: CallFrame; px: number; t: number;
   }
   const r = 11 * px
   const Icon = c.status === 'on_scene' ? HeartPulse : Siren
-  // Rings fill clockwise from 12 o'clock: on-scene progress, or how long a call has waited.
+  // On-scene progress as a ring that fills clockwise from 12 o'clock.
   const ring = 2 * Math.PI * (r + 3 * px)
-  const fill = c.status === 'on_scene' ? c.progress : c.status === 'waiting' ? Math.min(1, c.waited / WAIT_FULL) : 0
+  const fill = c.status === 'on_scene' ? c.progress : 0
   return (
     <g>
       <title>{callTitle(c)}</title>
