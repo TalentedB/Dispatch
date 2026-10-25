@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEven
 import { Ambulance, Check, HeartPulse, Hospital, Map as MapIcon, Siren } from 'lucide-react'
 import { OVERLAYS } from '@/overlays/registry'
 import type { Map2DContext } from '@/overlays/types'
-import { CALL_STATUS, vehicleColor } from '@/engine/status'
+import { CALL_STATUS, VEHICLE_STATUS } from '@/engine/status'
+import { formatClock, formatMinutes } from '@/playback/clock'
 import type { Bounds, CallFrame, VehicleFrame } from '@/engine/sample'
 import { useSize } from './useSize'
 import type { ViewPlugin, ViewProps } from './types'
@@ -132,15 +133,16 @@ function CityCanvas({ bounds, vb, width, height }: { bounds: Bounds; vb: number[
     g.fillStyle = themeColor('map-tree')
     g.fill()
 
-    // Avenue centre lines; the two through base are dashed.
+    // Avenue centre lines.
     g.strokeStyle = themeColor('map-lane')
     g.lineWidth = px
     g.beginPath()
     for (let x = Math.ceil(r.x0 / 5) * 5; x <= r.x1; x += 5) if (x !== 0) { g.moveTo(x, sy(r.y0)); g.lineTo(x, sy(r.y1)) }
     for (let y = Math.ceil(r.y0 / 5) * 5; y <= r.y1; y += 5) if (y !== 0) { g.moveTo(r.x0, sy(y)); g.lineTo(r.x1, sy(y)) }
     g.stroke()
-    g.lineWidth = 1.5 * px
-    g.setLineDash([7 * px, 6 * px])
+    // The two streets through base are drawn as solid graph axes.
+    g.strokeStyle = themeColor('map-axis')
+    g.lineWidth = 3 * px
     g.beginPath()
     g.moveTo(r.x0, 0); g.lineTo(r.x1, 0)
     g.moveTo(0, sy(r.y0)); g.lineTo(0, sy(r.y1))
@@ -193,13 +195,29 @@ function BaseMarker({ px }: { px: number }) {
   )
 }
 
-function CallMarker({ c, px }: { c: CallFrame; px: number }) {
+/** Minutes a resolved call's check mark stays on the map, fading out. */
+const DONE_FADE = 45
+/** A waiting call's ring is full after this many minutes. */
+const WAIT_FULL = 60
+
+function callTitle(c: CallFrame, finish?: number) {
+  const head = `Call #${c.call.id}`
+  if (c.status === 'waiting') return `${head}: waiting ${formatMinutes(c.waited)} for a vehicle`
+  if (c.status === 'dispatched') return `${head}: vehicle ${c.vehicle} on the way`
+  if (c.status === 'on_scene') return `${head}: vehicle ${c.vehicle} on scene (${Math.round(c.progress * 100)}%)`
+  return `${head}: resolved${finish !== undefined ? ` at ${formatClock(finish)}` : ''}`
+}
+
+function CallMarker({ c, px, t, finish }: { c: CallFrame; px: number; t: number; finish?: number }) {
   const color = CALL_STATUS[c.status].color
   const x = c.call.x
   const y = sy(c.call.y)
   if (c.status === 'done') {
+    const age = finish === undefined ? DONE_FADE : t - finish
+    if (age >= DONE_FADE) return null
     return (
-      <g opacity={0.55}>
+      <g opacity={0.6 * (1 - age / DONE_FADE)}>
+        <title>{callTitle(c, finish)}</title>
         <circle cx={x} cy={y} r={5.5 * px} fill={color} />
         <Check x={x - 3.5 * px} y={y - 3.5 * px} size={7 * px} color={themeColor('map-paper')} strokeWidth={3} />
       </g>
@@ -207,40 +225,47 @@ function CallMarker({ c, px }: { c: CallFrame; px: number }) {
   }
   const r = 11 * px
   const Icon = c.status === 'on_scene' ? HeartPulse : Siren
-  // On-scene progress as a ring that fills clockwise from 12 o'clock.
+  // Rings fill clockwise from 12 o'clock: on-scene progress, or how long a call has waited.
   const ring = 2 * Math.PI * (r + 3 * px)
+  const fill = c.status === 'on_scene' ? c.progress : c.status === 'waiting' ? Math.min(1, c.waited / WAIT_FULL) : 0
   return (
     <g>
+      <title>{callTitle(c)}</title>
       {c.status === 'waiting' && (
         <circle cx={x} cy={y} r={r} fill="none" stroke={color} strokeWidth={2 * px}>
           <animate attributeName="r" values={`${r};${r * 2.1}`} dur="1.6s" repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.7;0" dur="1.6s" repeatCount="indefinite" />
         </circle>
       )}
-      {c.status === 'on_scene' && (
+      {fill > 0 && (
         <>
           <circle cx={x} cy={y} r={r + 3 * px} fill="none" stroke={color} strokeOpacity={0.2} strokeWidth={2.5 * px} />
           <circle cx={x} cy={y} r={r + 3 * px} fill="none" stroke={color} strokeWidth={2.5 * px} strokeLinecap="round"
-            strokeDasharray={`${ring * c.progress} ${ring}`} transform={`rotate(-90 ${x} ${y})`} />
+            strokeDasharray={`${ring * fill} ${ring}`} transform={`rotate(-90 ${x} ${y})`} />
         </>
       )}
       <circle cx={x} cy={y} r={r} fill={color} stroke={themeColor('map-paper')} strokeWidth={1.5 * px} />
       <Icon x={x - 7 * px} y={y - 7 * px} size={14 * px} color={themeColor('map-paper')} strokeWidth={2.25} />
-      <Tag x={x + 11 * px} y={y - 10 * px} text={`#${c.call.id}`} color={color} px={px} />
     </g>
   )
 }
 
 function VehicleMarker({ v, px }: { v: VehicleFrame; px: number }) {
-  const color = vehicleColor(v.id)
+  // Colour shows what the vehicle is doing (idle, responding, on scene, returning); the tag shows which one it is.
+  const color = VEHICLE_STATUS[v.status].color
   const x = v.x
   const y = sy(v.y)
   const s = 22 * px
   // The icon faces east; mirror it while the vehicle heads west.
   const next = v.remainingPath[1]
   const west = next !== undefined && next[0] < v.x
+  const state = VEHICLE_STATUS[v.status].label
+  const title = `Vehicle ${v.id}: ${state}` +
+    (v.call ? ` (call #${v.call.id})` : '') +
+    (v.minutesToComplete !== undefined ? `, done in ${formatMinutes(v.minutesToComplete)}` : '')
   return (
     <g>
+      <title>{title}</title>
       <rect x={x - s / 2} y={y - s / 2} width={s} height={s} rx={6 * px} fill={color}
         stroke={themeColor('map-paper')} strokeWidth={2 * px} />
       <g transform={west ? `translate(${2 * x} 0) scale(-1 1)` : undefined}>
@@ -301,8 +326,12 @@ function TopDown({ prepared, frame, overlays }: ViewProps) {
           {active.filter((o) => o.under).map((o) => <g key={o.id}>{o.render.map2d!(ctx)}</g>)}
           <BaseMarker px={px} />
           {/* Done calls first so live ones draw on top. */}
-          {frame.calls.filter((c) => c.status === 'done').map((c) => <CallMarker key={c.call.id} c={c} px={px} />)}
-          {frame.calls.filter((c) => c.status !== 'future' && c.status !== 'done').map((c) => <CallMarker key={c.call.id} c={c} px={px} />)}
+          {frame.calls.filter((c) => c.status === 'done').map((c) => (
+            <CallMarker key={c.call.id} c={c} px={px} t={frame.t} finish={prepared.callById.get(c.call.id)?.finish} />
+          ))}
+          {frame.calls.filter((c) => c.status !== 'future' && c.status !== 'done').map((c) => (
+            <CallMarker key={c.call.id} c={c} px={px} t={frame.t} />
+          ))}
           {frame.vehicles.map((v) => <VehicleMarker key={v.id} v={v} px={px} />)}
           {active.filter((o) => !o.under).map((o) => <g key={o.id}>{o.render.map2d!(ctx)}</g>)}
         </svg>

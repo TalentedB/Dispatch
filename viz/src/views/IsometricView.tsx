@@ -6,7 +6,8 @@ import * as THREE from 'three'
 import { Box } from 'lucide-react'
 import type { XY } from '@/contract/trace'
 import { nearestDistance, type CallFrame, type Prepared, type VehicleFrame } from '@/engine/sample'
-import { CALL_STATUS, vehicleColor } from '@/engine/status'
+import { CALL_STATUS, VEHICLE_STATUS } from '@/engine/status'
+import { Line3D } from '@/overlays/shared'
 import { OVERLAYS } from '@/overlays/registry'
 import type { Map3DContext } from '@/overlays/types'
 import { distanceColor } from './colors'
@@ -84,8 +85,11 @@ function Terrain({ prepared, distAt, heightAt, range }: {
   )
 }
 
-function CallPillar({ c, heightAt, k, vehicles }: {
-  c: CallFrame; heightAt: (x: number, y: number) => number; k: number; vehicles: VehicleFrame[]
+/** Minutes a resolved call's marker stays on the map, fading out (same as the top-down view). */
+const DONE_FADE = 45
+
+function CallPillar({ c, heightAt, k, vehicles, t, finish }: {
+  c: CallFrame; heightAt: (x: number, y: number) => number; k: number; vehicles: VehicleFrame[]; t: number; finish?: number
 }) {
   const mat = useRef<THREE.MeshStandardMaterial>(null)
   const color = CALL_STATUS[c.status].color
@@ -94,10 +98,12 @@ function CallPillar({ c, heightAt, k, vehicles }: {
   })
   const base = heightAt(c.call.x, c.call.y)
   if (c.status === 'done') {
+    const age = finish === undefined ? DONE_FADE : t - finish
+    if (age >= DONE_FADE) return null
     return (
       <mesh position={[c.call.x, base + 0.05, -c.call.y]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.35, 16]} />
-        <meshBasicMaterial color={color} transparent opacity={0.6} />
+        <meshBasicMaterial color={color} transparent opacity={0.6 * (1 - age / DONE_FADE)} />
       </mesh>
     )
   }
@@ -122,14 +128,9 @@ function CallPillar({ c, heightAt, k, vehicles }: {
 }
 
 function Vehicle({ v, heightAt }: { v: VehicleFrame; heightAt: (x: number, y: number) => number }) {
-  const light = useRef<THREE.MeshStandardMaterial>(null)
-  useFrame(() => {
-    if (!light.current) return
-    const on = v.status === 'to_job'
-    light.current.emissive.set(v.status === 'to_job' ? (on ? themeColor('state-scene') : themeColor('state-return')) : themeColor('state-idle'))
-  })
   const y = heightAt(v.x, v.y)
-  const color = vehicleColor(v.id)
+  // Colour shows what the vehicle is doing, matching the top-down view.
+  const color = VEHICLE_STATUS[v.status].color
   return (
     <group position={[v.x, y + 0.3, -v.y]}>
       <mesh>
@@ -138,7 +139,7 @@ function Vehicle({ v, heightAt }: { v: VehicleFrame; heightAt: (x: number, y: nu
       </mesh>
       <mesh position={[0, 0.35, 0]}>
         <boxGeometry args={[0.4, 0.2, 0.25]} />
-        <meshStandardMaterial ref={light} color={themeColor('map-grid')} emissiveIntensity={2} />
+        <meshStandardMaterial color={themeColor('map-mark')} />
       </mesh>
     </group>
   )
@@ -192,17 +193,23 @@ function Isometric({ prepared, frame, overlays, options }: ViewProps) {
           </mesh>
           <pointLight color={themeColor('state-return')} intensity={30} distance={12} position={[0, 2, 0]} />
         </group>
+        {/* The two streets through base, as solid graph axes like the top-down view. */}
+        <Line3D path={[[minX, 0], [maxX, 0]]} height={heightAt} color={themeColor('map-axis')} width={3} />
+        <Line3D path={[[0, minY], [0, maxY]]} height={heightAt} color={themeColor('map-axis')} width={3} />
         {frame.calls.filter((c) => c.status !== 'future').map((c) => (
-          <CallPillar key={c.call.id} c={c} heightAt={heightAt} k={k} vehicles={frame.vehicles} />
+          <CallPillar key={c.call.id} c={c} heightAt={heightAt} k={k} vehicles={frame.vehicles}
+            t={frame.t} finish={prepared.callById.get(c.call.id)?.finish} />
         ))}
         {frame.vehicles.map((v) => <Vehicle key={v.id} v={v} heightAt={heightAt} />)}
         {active.map((o) => <group key={o.id}>{o.render.map3d!(ctx)}</group>)}
         <OrbitControls makeDefault target={[(minX + maxX) / 2, 2, -(minY + maxY) / 2]} enableDamping maxPolarAngle={Math.PI / 2.1} />
       </Canvas>
       <div className="pointer-events-none absolute bottom-2 left-2 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>terrain height &amp; colour = drive time to nearest {field === 'free' ? 'free ' : ''}vehicle</span>
-        <span className="h-1.5 w-20 rounded-full" style={{ background: 'var(--coverage-ramp)' }} />
-        <span>Pillar: distance to responder. Drag to orbit.</span>
+        {field !== 'flat' && (
+          <span className="flex items-center gap-1.5" title={`Terrain height and colour: drive time to the nearest ${field === 'free' ? 'free ' : ''}vehicle`}>
+            near <span className="h-1.5 w-16 rounded-full" style={{ background: 'var(--coverage-ramp)' }} /> far
+          </span>
+        )}
       </div>
     </div>
   )
