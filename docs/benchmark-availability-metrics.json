@@ -1,0 +1,249 @@
+[
+  {
+    "solver": "greedy-staged",
+    "input": "inputs\\brief_2_vehicles.txt",
+    "status": "ok",
+    "wall_seconds": 0.5634119999594986,
+    "metrics": {
+      "total_response": 44,
+      "average_response": 14.666666666666666,
+      "maximum_response": 33,
+      "total_travel": 111,
+      "relocation_travel": 67,
+      "fleet_utilization": 0.045,
+      "solver_seconds": 0.0,
+      "coverage_seconds": 0.250181500101462,
+      "fallback_count": 0,
+      "greedy_fallback_count": 0,
+      "retained_fallback_count": 0,
+      "dp_plans": 0,
+      "incident_solves": 3,
+      "reused_plans": 0,
+      "coverage_skipped_budget": 0
+    },
+    "planning_status_counts": {
+      "GREEDY": 3
+    },
+    "coverage_status_counts": {
+      "HEURISTIC": 3,
+      "EXACT_CANDIDATES": 12,
+      "UNCHANGED (candidate: EXACT_CANDIDATES)": 3
+    }
+  },
+  {
+    "solver": "strategy4",
+    "input": "inputs\\brief_2_vehicles.txt",
+    "status": "ok",
+    "wall_seconds": 0.5282278000377119,
+    "metrics": {
+      "total_response": 44,
+      "average_response": 14.666666666666666,
+      "maximum_response": 33,
+      "total_travel": 111,
+      "relocation_travel": 67,
+      "fleet_utilization": 0.045,
+      "solver_seconds": 0.0005103996954858303,
+      "coverage_seconds": 0.234663600102067,
+      "fallback_count": 0,
+      "greedy_fallback_count": 0,
+      "retained_fallback_count": 0,
+      "dp_plans": 3,
+      "incident_solves": 3,
+      "reused_plans": 0,
+      "coverage_skipped_budget": 0
+    },
+    "planning_status_counts": {
+      "DP_OPTIMAL": 3
+    },
+    "coverage_status_counts": {
+      "HEURISTIC": 3,
+      "EXACT_CANDIDATES": 12,
+      "UNCHANGED (candidate: EXACT_CANDIDATES)": 3
+    }
+  },
+  {
+    "solver": "greedy-staged",
+    "input": "inputs\\generated\\clustered_1.txt",
+    "status": "ok",
+    "wall_seconds": 2.028566800057888,
+    "metrics": {
+      "total_response": 567,
+      "average_response": 18.9,
+      "maximum_response": 47,
+      "total_travel": 731,
+      "relocation_travel": 352,
+      "fleet_utilization": 0.15019860973187688,
+      "solver_seconds": 0.0,
+      "coverage_seconds": 1.6612230991013348,
+      "fallback_count": 0,
+      "greedy_fallback_count": 0,
+      "retained_fallback_count": 0,
+      "dp_plans": 0,
+      "incident_solves": 42,
+      "reused_plans": 28,
+      "coverage_skipped_budget": 0
+    },
+    "planning_status_counts": {
+      "GREEDY": 42
+    },
+    "coverage_status_counts": {
+      "HEURISTIC": 41,
+      "EXACT_CANDIDATES": 38,
+      "UNCHANGED (candidate: HEURISTIC)": 2
+    }
+  },
+  {
+    "solver": "strategy4",
+    "input": "inputs\\generated\\clustered_1.txt",
+    "status": "ok",
+    "wall_seconds": 1.9600794999860227,
+    "metrics": {
+      "total_response": 575,
+      "average_response": 19.166666666666668,
+      "maximum_response": 40,
+      "total_travel": 826,
+      "relocation_travel": 455,
+      "fleet_utilization": 0.14627659574468085,
+      "solver_seconds": 0.01416089991107583,
+      "coverage_seconds": 1.5750912998337299,
+      "fallback_count": 0,
+      "greedy_fallback_count": 0,
+      "retained_fallback_count": 0,
+      "dp_plans": 44,
+      "incident_solves": 44,
+      "reused_plans": 29,
+      "coverage_skipped_budget": 0
+    },
+    "planning_status_counts": {
+      "DP_OPTIMAL": 44
+    },
+    "coverage_status_counts": {
+      "HEURISTIC": 44,
+      "EXACT_CANDIDATES": 40
+    }
+  },
+  {
+    "solver": "greedy-staged",
+    "input": "inputs\\generated\\overloaded_1.txt",
+    "status": "ok",
+    "wall_seconds": 0.3755852000322193,
+    "metrics": {
+      "total_response": 15562,
+      "average_response": 389.05,
+      "maximum_response": 717,
+      "total_travel": 895,
+      "relocation_travel": 44,
+      "fleet_utilization": 0.3449738903394256,
+      "solver_seconds": 0.0,
+      "coverage_seconds": 0.07031049975194037,
+      "fallback_count": 0,
+      "greedy_fallback_count": 0,
+      "retained_fallback_count": 0,
+      "dp_plans": 0,
+      "incident_solves": 38,
+      "reused_plans": 36,
+      "coverage_skipped_budget": 0
+    },
+    "planning_status_counts": {
+      "GREEDY": 38
+    },
+    "coverage_status_counts": {
+      "HEURISTIC": 2,
+      "EXACT_CANDIDATES": 4
+    }
+  },
+  {
+    "solver": "strategy4",
+    "input": "inputs\\generated\\overloaded_1.txt",
+    "status": "ok",
+    "wall_seconds": 14.86549870017916,
+    "metrics": {
+      "total_response": 9565,
+      "average_response": 239.125,
+      "maximum_response": 638,
+      "total_travel": 513,
+      "relocation_travel": 78,
+      "fleet_utilization": 0.3961769115442279,
+      "solver_seconds": 14.4492225011345,
+      "coverage_seconds": 0.12194680003449321,
+      "fallback_count": 0,
+      "greedy_fallback_count": 0,
+      "retained_fallback_count": 0,
+      "dp_plans": 10,
+      "incident_solves": 38,
+      "reused_plans": 37,
+      "coverage_skipped_budget": 0
+    },
+    "planning_status_counts": {
+      "DP_OPTIMAL": 10,
+      "FEASIBLE": 28
+    },
+    "coverage_status_counts": {
+      "HEURISTIC": 2,
+      "EXACT_CANDIDATES": 7
+    }
+  },
+  {
+    "solver": "greedy-staged",
+    "input": "inputs\\generated\\rush_hour_1.txt",
+    "status": "ok",
+    "wall_seconds": 0.4708398000802845,
+    "metrics": {
+      "total_response": 6136,
+      "average_response": 204.53333333333333,
+      "maximum_response": 392,
+      "total_travel": 698,
+      "relocation_travel": 39,
+      "fleet_utilization": 0.19596602972399152,
+      "solver_seconds": 0.0,
+      "coverage_seconds": 0.17000140040181577,
+      "fallback_count": 0,
+      "greedy_fallback_count": 0,
+      "retained_fallback_count": 0,
+      "dp_plans": 0,
+      "incident_solves": 28,
+      "reused_plans": 24,
+      "coverage_skipped_budget": 0
+    },
+    "planning_status_counts": {
+      "GREEDY": 28
+    },
+    "coverage_status_counts": {
+      "HEURISTIC": 7,
+      "EXACT_CANDIDATES": 1,
+      "UNCHANGED (candidate: HEURISTIC)": 2
+    }
+  },
+  {
+    "solver": "strategy4",
+    "input": "inputs\\generated\\rush_hour_1.txt",
+    "status": "ok",
+    "wall_seconds": 7.471635099966079,
+    "metrics": {
+      "total_response": 4142,
+      "average_response": 138.06666666666666,
+      "maximum_response": 315,
+      "total_travel": 429,
+      "relocation_travel": 51,
+      "fleet_utilization": 0.2074623510901326,
+      "solver_seconds": 6.9452735998202115,
+      "coverage_seconds": 0.2227490998338908,
+      "fallback_count": 0,
+      "greedy_fallback_count": 0,
+      "retained_fallback_count": 0,
+      "dp_plans": 12,
+      "incident_solves": 28,
+      "reused_plans": 25,
+      "coverage_skipped_budget": 0
+    },
+    "planning_status_counts": {
+      "DP_OPTIMAL": 12,
+      "FEASIBLE": 16
+    },
+    "coverage_status_counts": {
+      "HEURISTIC": 6,
+      "EXACT_CANDIDATES": 4,
+      "UNCHANGED (candidate: HEURISTIC)": 2
+    }
+  }
+]

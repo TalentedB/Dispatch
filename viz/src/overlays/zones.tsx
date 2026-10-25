@@ -56,5 +56,5 @@ export const zonesOverlay: OverlayPlugin = {
   icon: ShieldCheck,
   defaultOn: true,
   under: true,
-  render: { map2d: ({ prepared, frame, sy }) => <Zones bounds={prepared.bounds} frame={frame} sy={sy} /> },
+  render: { map2d: ({ frame, sy }) => <Zones bounds={frame.bounds} frame={frame} sy={sy} /> },
 }

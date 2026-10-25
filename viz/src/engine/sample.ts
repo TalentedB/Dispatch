@@ -21,7 +21,7 @@ export interface Prepared {
   trace: Trace
   calls: CallTimeline[]
   callById: Map<number, CallTimeline>
-  bounds: Bounds
+  boundsHistory: { time: number; bounds: Bounds }[]
   /** Per-minute series starting at span.start, for the scrubber sparkline. */
   busySeries: number[]
   waitingSeries: number[]
@@ -41,6 +41,9 @@ export interface VehicleFrame {
   minutesToArrive?: number
   /** Minutes until the vehicle's current job is finished (driving + working). */
   minutesToComplete?: number
+  /** Projected readiness after current locked work and the currently known queue. */
+  readyPosition?: XY
+  busyMinutes?: number
   /** 0..1 through the current segment. */
   progress: number
 }
@@ -57,6 +60,8 @@ export interface CallFrame {
 
 export interface Frame {
   t: number
+  /** Known city square at this playback time; future calls never resize it. */
+  bounds: Bounds
   vehicles: VehicleFrame[]
   calls: CallFrame[]
   stats: { waiting: number; enRoute: number; onScene: number; done: number; busy: number; avgResponse: number | null }
@@ -118,14 +123,20 @@ export function prepare(trace: Trace): Prepared {
     }
   }
 
-  const pts: XY[] = [[0, 0], ...trace.calls.map((c) => [c.x, c.y] as XY)]
-  for (const v of trace.vehicles) for (const s of v.segments) pts.push(...s.path)
-  const pad = 2
-  const bounds = {
-    minX: Math.min(...pts.map((p) => p[0])) - pad,
-    maxX: Math.max(...pts.map((p) => p[0])) + pad,
-    minY: Math.min(...pts.map((p) => p[1])) - pad,
-    maxY: Math.max(...pts.map((p) => p[1])) + pad,
+  const square = (radius: number): Bounds => ({
+    minX: -radius, maxX: radius, minY: -radius, maxY: radius,
+  })
+  // Only the configured initial extent is available before the first report.
+  // Later history entries and future movement endpoints must not affect it.
+  const initialExtent = trace.dispatch?.mapHistory[0]?.bounds
+  let radius = initialExtent ? Math.max(...initialExtent.map(Math.abs)) : 5
+  const boundsHistory = [{ time: -Infinity, bounds: square(radius) }]
+  for (const call of [...trace.calls].sort((a, b) => a.time - b.time || a.id - b.id)) {
+    const reportedRadius = Math.max(radius, Math.abs(call.x), Math.abs(call.y))
+    if (reportedRadius > radius) {
+      radius = reportedRadius
+      boundsHistory.push({ time: call.time, bounds: square(radius) })
+    }
   }
 
   const { start, end } = trace.span
@@ -145,7 +156,7 @@ export function prepare(trace: Trace): Prepared {
     return arr.slice(0, n).map((x) => (run += x))
   }
 
-  const prepared = { trace, calls, callById, bounds, busySeries: acc(busy), waitingSeries: acc(waiting) }
+  const prepared = { trace, calls, callById, boundsHistory, busySeries: acc(busy), waitingSeries: acc(waiting) }
   cache.set(trace, prepared)
   return prepared
 }
@@ -203,10 +214,21 @@ export function sampleVehicle(p: Prepared, vehicleIndex: number, t: number): Veh
   if (MOVING.includes(s.kind)) frame.minutesToArrive = s.end - t
   if (s.kind === 'to_job' && call) frame.minutesToComplete = s.end - t + call.duration
   if (s.kind === 'on_job') frame.minutesToComplete = s.end - t
+  if (s.kind === 'to_job' || s.kind === 'on_job') {
+    const snapshot = p.trace.dispatch?.coverage?.findLast((entry) => entry.time <= t)
+    const forecast = snapshot?.busyAnchors.find((anchor) => anchor.vehicle === v.id)
+    frame.busyMinutes = Math.max(frame.minutesToComplete ?? 0, (forecast?.available ?? t) - t)
+    frame.readyPosition = forecast ? [forecast.x, forecast.y] : call ? [call.x, call.y] : here.p
+  }
   return frame
 }
 
 export function sampleFrame(p: Prepared, t: number): Frame {
+  let bounds = p.boundsHistory[0].bounds
+  for (const entry of p.boundsHistory) {
+    if (entry.time > t) break
+    bounds = entry.bounds
+  }
   const vehicles = p.trace.vehicles.map((_, i) => sampleVehicle(p, i, t))
   const stats = { waiting: 0, enRoute: 0, onScene: 0, done: 0, busy: 0, avgResponse: null as number | null }
   let responseSum = 0
@@ -235,7 +257,7 @@ export function sampleFrame(p: Prepared, t: number): Frame {
   })
   stats.busy = vehicles.filter((v) => v.status !== 'idle').length
   stats.avgResponse = responded ? responseSum / responded : null
-  return { t, vehicles, calls, stats }
+  return { t, bounds, vehicles, calls, stats }
 }
 
 /** The path a vehicle drove during [t - window, t], for trails. */
@@ -257,6 +279,21 @@ export function nearestDistance(x: number, y: number, points: XY[]): number {
   for (const q of points) {
     const d = Math.abs(x - q[0]) + Math.abs(y - q[1])
     if (d < best) best = d
+  }
+  return best
+}
+
+/** Earliest response after finishing a locked job, then driving on the grid.
+ * Busy time is additive minutes (Z), rather than a Euclidean spatial axis.
+ */
+export function nearestResponseTime(x: number, y: number, vehicles: VehicleFrame[]): number {
+  let best = Infinity
+  for (const vehicle of vehicles) {
+    const committed = vehicle.status === 'to_job' || vehicle.status === 'on_job'
+    const readyX = vehicle.readyPosition?.[0] ?? (committed && vehicle.call ? vehicle.call.x : vehicle.x)
+    const readyY = vehicle.readyPosition?.[1] ?? (committed && vehicle.call ? vehicle.call.y : vehicle.y)
+    const busyMinutes = Math.max(0, vehicle.busyMinutes ?? (committed ? vehicle.minutesToComplete ?? 0 : 0))
+    best = Math.min(best, busyMinutes + Math.abs(x - readyX) + Math.abs(y - readyY))
   }
   return best
 }

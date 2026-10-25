@@ -1,0 +1,1580 @@
+[
+  {
+    "solver": "greedy",
+    "input": "inputs\\brief_1_vehicle.txt",
+    "status": "ok",
+    "wall_seconds": 0.21479170001111925,
+    "error": "",
+    "metrics": {
+      "total_response": 144,
+      "average_response": 48.0,
+      "maximum_response": 105,
+      "total_travel": 88,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.09137055837563451,
+      "solver_seconds": 0.0,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      },
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      },
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      },
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      },
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "milp",
+    "input": "inputs\\brief_1_vehicle.txt",
+    "status": "ok",
+    "wall_seconds": 0.3556094001978636,
+    "error": "",
+    "metrics": {
+      "total_response": 144,
+      "average_response": 48.0,
+      "maximum_response": 105,
+      "total_travel": 88,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.09137055837563451,
+      "solver_seconds": 0.18432290013879538,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 35,
+        "gap": 0.0,
+        "seconds": 0.16994120017625391,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 105,
+        "gap": 0.0,
+        "seconds": 0.00441639986820519,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 105,
+        "gap": 0.0,
+        "seconds": 0.003405699972063303,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 105,
+        "gap": 0.0,
+        "seconds": 0.003296900074928999,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 4,
+        "gap": 0.0,
+        "seconds": 0.0032627000473439693,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "offline",
+    "input": "inputs\\brief_1_vehicle.txt",
+    "status": "ok",
+    "wall_seconds": 0.4337383001111448,
+    "error": "",
+    "metrics": {
+      "total_response": 134,
+      "average_response": 44.666666666666664,
+      "maximum_response": 90,
+      "total_travel": 88,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.08823529411764706,
+      "solver_seconds": 0.2548552001826465,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 134,
+        "gap": 0.0,
+        "seconds": 0.19326740014366806,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 134,
+        "gap": 0.0,
+        "seconds": 0.031090199947357178,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 134,
+        "gap": 0.0,
+        "seconds": 0.009687700076028705,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 129,
+        "gap": 0.0,
+        "seconds": 0.00500190001912415,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 129,
+        "gap": 0.0,
+        "seconds": 0.005693800048902631,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 39,
+        "gap": 0.0,
+        "seconds": 0.0033623999916017056,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 39,
+        "gap": 0.0,
+        "seconds": 0.0033382000401616096,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 39,
+        "gap": 0.0,
+        "seconds": 0.003413599915802479,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "staged",
+    "input": "inputs\\brief_1_vehicle.txt",
+    "status": "ok",
+    "wall_seconds": 0.46438800008036196,
+    "error": "",
+    "metrics": {
+      "total_response": 151,
+      "average_response": 50.333333333333336,
+      "maximum_response": 110,
+      "total_travel": 94,
+      "relocation_travel": 9,
+      "fleet_utilization": 0.09164969450101833,
+      "solver_seconds": 0.017696800641715527,
+      "coverage_seconds": 0.23617610009387136,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 40,
+        "gap": 0.0,
+        "seconds": 0.0033403001725673676,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 110,
+        "gap": 0.0,
+        "seconds": 0.003250500187277794,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 110,
+        "gap": 0.0,
+        "seconds": 0.0036602001637220383,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 110,
+        "gap": 0.0,
+        "seconds": 0.0034441999159753323,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 1,
+        "gap": 0.0,
+        "seconds": 0.004001600202172995,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": [
+      {
+        "targets": {
+          "0": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        "radius": 5,
+        "average": 2.727272727272727,
+        "relocation": 5,
+        "status": "Optimal",
+        "seconds": 0.19829630013555288,
+        "gap": 0.0,
+        "improved": true
+      },
+      {
+        "targets": {},
+        "radius": 0,
+        "average": 0,
+        "relocation": 0,
+        "status": "EMPTY",
+        "seconds": 0.0,
+        "gap": null,
+        "improved": false
+      },
+      {
+        "targets": {
+          "0": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        "radius": 5,
+        "average": 2.727272727272727,
+        "relocation": 4,
+        "status": "Optimal",
+        "seconds": 0.03787979995831847,
+        "gap": 0.0,
+        "improved": true
+      },
+      {
+        "targets": {},
+        "radius": 0,
+        "average": 0,
+        "relocation": 0,
+        "status": "EMPTY",
+        "seconds": 0.0,
+        "gap": null,
+        "improved": false
+      }
+    ]
+  },
+  {
+    "solver": "greedy",
+    "input": "inputs\\brief_2_vehicles.txt",
+    "status": "ok",
+    "wall_seconds": 0.157332600094378,
+    "error": "",
+    "metrics": {
+      "total_response": 44,
+      "average_response": 14.666666666666666,
+      "maximum_response": 35,
+      "total_travel": 88,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.04568527918781726,
+      "solver_seconds": 0.0,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      },
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      },
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "milp",
+    "input": "inputs\\brief_2_vehicles.txt",
+    "status": "ok",
+    "wall_seconds": 0.36608750000596046,
+    "error": "",
+    "metrics": {
+      "total_response": 44,
+      "average_response": 14.666666666666666,
+      "maximum_response": 35,
+      "total_travel": 88,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.04568527918781726,
+      "solver_seconds": 0.17735170014202595,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 35,
+        "gap": 0.0,
+        "seconds": 0.1694883001036942,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 5,
+        "gap": 0.0,
+        "seconds": 0.0036462999414652586,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 4,
+        "gap": 0.0,
+        "seconds": 0.0042171000968664885,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "offline",
+    "input": "inputs\\brief_2_vehicles.txt",
+    "status": "ok",
+    "wall_seconds": 0.41046329983510077,
+    "error": "",
+    "metrics": {
+      "total_response": 43,
+      "average_response": 14.333333333333334,
+      "maximum_response": 35,
+      "total_travel": 82,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.04573170731707317,
+      "solver_seconds": 0.2275959998369217,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 43,
+        "gap": 0.0,
+        "seconds": 0.18112499988637865,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 43,
+        "gap": 0.0,
+        "seconds": 0.012344199931249022,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 8,
+        "gap": 0.0,
+        "seconds": 0.007006499916315079,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 3,
+        "gap": 0.0,
+        "seconds": 0.004245799966156483,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 3,
+        "gap": 0.0,
+        "seconds": 0.004638599930331111,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 3,
+        "gap": 0.0,
+        "seconds": 0.004581700079143047,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 3,
+        "gap": 0.0,
+        "seconds": 0.004378400044515729,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 3,
+        "gap": 0.0,
+        "seconds": 0.0043783001601696014,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 3,
+        "gap": 0.0,
+        "seconds": 0.004897499922662973,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "staged",
+    "input": "inputs\\brief_2_vehicles.txt",
+    "status": "ok",
+    "wall_seconds": 1.2860447999555618,
+    "error": "",
+    "metrics": {
+      "total_response": 40,
+      "average_response": 13.333333333333334,
+      "maximum_response": 35,
+      "total_travel": 92,
+      "relocation_travel": 29,
+      "fleet_utilization": 0.04513540621865597,
+      "solver_seconds": 0.012187600135803223,
+      "coverage_seconds": 1.087105399928987,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 35,
+        "gap": 0.0,
+        "seconds": 0.0037914998829364777,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 4,
+        "gap": 0.0,
+        "seconds": 0.0035878000780940056,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 1,
+        "gap": 0.0,
+        "seconds": 0.004808300174772739,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": [
+      {
+        "targets": {
+          "0": {
+            "x": 0,
+            "y": 0
+          },
+          "1": {
+            "x": 7,
+            "y": 0
+          }
+        },
+        "radius": 3,
+        "average": 1.6363636363636365,
+        "relocation": 7,
+        "status": "Optimal",
+        "seconds": 0.4811865999363363,
+        "gap": 0.0,
+        "improved": true
+      },
+      {
+        "targets": {
+          "1": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        "radius": 5,
+        "average": 2.727272727272727,
+        "relocation": 2,
+        "status": "Optimal",
+        "seconds": 0.031403500121086836,
+        "gap": 0.0,
+        "improved": true
+      },
+      {
+        "targets": {},
+        "radius": 0,
+        "average": 0,
+        "relocation": 0,
+        "status": "EMPTY",
+        "seconds": 0.0,
+        "gap": null,
+        "improved": false
+      },
+      {
+        "targets": {
+          "1": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        "radius": 5,
+        "average": 2.727272727272727,
+        "relocation": 4,
+        "status": "Optimal",
+        "seconds": 0.035009799990803,
+        "gap": 0.0,
+        "improved": true
+      },
+      {
+        "targets": {
+          "0": {
+            "x": -20,
+            "y": 15
+          },
+          "1": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        "radius": 5,
+        "average": 2.727272727272727,
+        "relocation": 0,
+        "status": "UNCHANGED (candidate: Optimal)",
+        "seconds": 0.504931699950248,
+        "gap": null,
+        "improved": false
+      },
+      {
+        "targets": {
+          "0": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        "radius": 5,
+        "average": 2.727272727272727,
+        "relocation": 40,
+        "status": "Optimal",
+        "seconds": 0.034573799930512905,
+        "gap": 0.0,
+        "improved": true
+      }
+    ]
+  },
+  {
+    "solver": "greedy",
+    "input": "inputs\\brief_small.txt",
+    "status": "ok",
+    "wall_seconds": 0.16137660015374422,
+    "error": "",
+    "metrics": {
+      "total_response": 7,
+      "average_response": 3.5,
+      "maximum_response": 5,
+      "total_travel": 14,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.006765899864682003,
+      "solver_seconds": 0.0,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      },
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "milp",
+    "input": "inputs\\brief_small.txt",
+    "status": "ok",
+    "wall_seconds": 0.35521589987911284,
+    "error": "",
+    "metrics": {
+      "total_response": 7,
+      "average_response": 3.5,
+      "maximum_response": 5,
+      "total_travel": 14,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.006765899864682003,
+      "solver_seconds": 0.17655449989251792,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 5,
+        "gap": 0.0,
+        "seconds": 0.17297329986467957,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 2,
+        "gap": 0.0,
+        "seconds": 0.0035812000278383493,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "offline",
+    "input": "inputs\\brief_small.txt",
+    "status": "ok",
+    "wall_seconds": 0.364554800093174,
+    "error": "",
+    "metrics": {
+      "total_response": 6,
+      "average_response": 3.0,
+      "maximum_response": 5,
+      "total_travel": 12,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.006775067750677507,
+      "solver_seconds": 0.18236229987815022,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 6,
+        "gap": 0.0,
+        "seconds": 0.16721179988235235,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 6,
+        "gap": 0.0,
+        "seconds": 0.005353400018066168,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 1,
+        "gap": 0.0,
+        "seconds": 0.0033732999581843615,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 1,
+        "gap": 0.0,
+        "seconds": 0.0032206999603658915,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 1,
+        "gap": 0.0,
+        "seconds": 0.003203100059181452,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "staged",
+    "input": "inputs\\brief_small.txt",
+    "status": "ok",
+    "wall_seconds": 0.38577309995889664,
+    "error": "",
+    "metrics": {
+      "total_response": 1,
+      "average_response": 0.5,
+      "maximum_response": 1,
+      "total_travel": 12,
+      "relocation_travel": 5,
+      "fleet_utilization": 0.006775067750677507,
+      "solver_seconds": 0.006590800127014518,
+      "coverage_seconds": 0.20083210011944175,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 0,
+        "gap": 0.0,
+        "seconds": 0.0034527999814599752,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 1,
+        "gap": 0.0,
+        "seconds": 0.0031380001455545425,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": [
+      {
+        "targets": {
+          "0": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        "radius": 5,
+        "average": 2.727272727272727,
+        "relocation": 5,
+        "status": "Optimal",
+        "seconds": 0.20083210011944175,
+        "gap": 0.0,
+        "improved": true
+      },
+      {
+        "targets": {},
+        "radius": 0,
+        "average": 0,
+        "relocation": 0,
+        "status": "EMPTY",
+        "seconds": 0.0,
+        "gap": null,
+        "improved": false
+      }
+    ]
+  },
+  {
+    "solver": "greedy",
+    "input": "tests\\fixtures\\coverage_line.txt",
+    "status": "ok",
+    "wall_seconds": 0.16849820013158023,
+    "error": "",
+    "metrics": {
+      "total_response": 10,
+      "average_response": 10.0,
+      "maximum_response": 10,
+      "total_travel": 20,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.024390243902439025,
+      "solver_seconds": 0.0,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "milp",
+    "input": "tests\\fixtures\\coverage_line.txt",
+    "status": "ok",
+    "wall_seconds": 0.34985140012577176,
+    "error": "",
+    "metrics": {
+      "total_response": 10,
+      "average_response": 10.0,
+      "maximum_response": 10,
+      "total_travel": 20,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.024390243902439025,
+      "solver_seconds": 0.17054200009442866,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 10,
+        "gap": 0.0,
+        "seconds": 0.17054200009442866,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "offline",
+    "input": "tests\\fixtures\\coverage_line.txt",
+    "status": "ok",
+    "wall_seconds": 0.3551866998896003,
+    "error": "",
+    "metrics": {
+      "total_response": 10,
+      "average_response": 10.0,
+      "maximum_response": 10,
+      "total_travel": 20,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.024390243902439025,
+      "solver_seconds": 0.1720046999398619,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 10,
+        "gap": 0.0,
+        "seconds": 0.1678444999270141,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 10,
+        "gap": 0.0,
+        "seconds": 0.004160200012847781,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "staged",
+    "input": "tests\\fixtures\\coverage_line.txt",
+    "status": "ok",
+    "wall_seconds": 0.39120329986326396,
+    "error": "",
+    "metrics": {
+      "total_response": 5,
+      "average_response": 5.0,
+      "maximum_response": 5,
+      "total_travel": 20,
+      "relocation_travel": 5,
+      "fleet_utilization": 0.027777777777777776,
+      "solver_seconds": 0.0034620999358594418,
+      "coverage_seconds": 0.20242620003409684,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 5,
+        "gap": 0.0,
+        "seconds": 0.0034620999358594418,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": [
+      {
+        "targets": {
+          "0": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        "radius": 5,
+        "average": 2.727272727272727,
+        "relocation": 5,
+        "status": "Optimal",
+        "seconds": 0.20242620003409684,
+        "gap": 0.0,
+        "improved": true
+      },
+      {
+        "targets": {},
+        "radius": 0,
+        "average": 0,
+        "relocation": 0,
+        "status": "EMPTY",
+        "seconds": 0.0,
+        "gap": null,
+        "improved": false
+      }
+    ]
+  },
+  {
+    "solver": "greedy",
+    "input": "tests\\fixtures\\duration_order.txt",
+    "status": "ok",
+    "wall_seconds": 0.17031620000489056,
+    "error": "",
+    "metrics": {
+      "total_response": 103,
+      "average_response": 51.5,
+      "maximum_response": 102,
+      "total_travel": 4,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.12135922330097088,
+      "solver_seconds": 0.0,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      },
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      },
+      {
+        "status": "GREEDY",
+        "objective": null,
+        "gap": null,
+        "seconds": 0.0,
+        "primary_optimal": false,
+        "lexicographic_optimal": false,
+        "fallback_reason": null,
+        "stage_statuses": []
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "milp",
+    "input": "tests\\fixtures\\duration_order.txt",
+    "status": "ok",
+    "wall_seconds": 0.37296449998393655,
+    "error": "",
+    "metrics": {
+      "total_response": 5,
+      "average_response": 2.5,
+      "maximum_response": 3,
+      "total_travel": 4,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.12135922330097088,
+      "solver_seconds": 0.18921679980121553,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 5,
+        "gap": 0.0,
+        "seconds": 0.18554509989917278,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 3,
+        "gap": 0.0,
+        "seconds": 0.0036716999020427465,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "offline",
+    "input": "tests\\fixtures\\duration_order.txt",
+    "status": "ok",
+    "wall_seconds": 0.37046319991350174,
+    "error": "",
+    "metrics": {
+      "total_response": 5,
+      "average_response": 2.5,
+      "maximum_response": 3,
+      "total_travel": 4,
+      "relocation_travel": 0,
+      "fleet_utilization": 0.12135922330097088,
+      "solver_seconds": 0.1863472000695765,
+      "coverage_seconds": 0,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 5,
+        "gap": 0.0,
+        "seconds": 0.17573829996399581,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 5,
+        "gap": 0.0,
+        "seconds": 0.006321100052446127,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 3,
+        "gap": 0.0,
+        "seconds": 0.004287800053134561,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": []
+  },
+  {
+    "solver": "staged",
+    "input": "tests\\fixtures\\duration_order.txt",
+    "status": "ok",
+    "wall_seconds": 0.4286708999425173,
+    "error": "",
+    "metrics": {
+      "total_response": 7,
+      "average_response": 3.5,
+      "maximum_response": 4,
+      "total_travel": 10,
+      "relocation_travel": 5,
+      "fleet_utilization": 0.12121212121212122,
+      "solver_seconds": 0.033847300335764885,
+      "coverage_seconds": 0.20247110002674162,
+      "fallback_count": 0
+    },
+    "optimizations": [
+      {
+        "status": "OPTIMAL",
+        "objective": 7,
+        "gap": 0.0,
+        "seconds": 0.03007840015925467,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      },
+      {
+        "status": "OPTIMAL",
+        "objective": 4,
+        "gap": 0.0,
+        "seconds": 0.003768900176510215,
+        "primary_optimal": true,
+        "lexicographic_optimal": true,
+        "fallback_reason": null,
+        "stage_statuses": [
+          "response: Optimal",
+          "worst: Optimal",
+          "travel: Optimal",
+          "deployments: Optimal"
+        ]
+      }
+    ],
+    "coverage": [
+      {
+        "targets": {
+          "0": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        "radius": 5,
+        "average": 2.727272727272727,
+        "relocation": 5,
+        "status": "Optimal",
+        "seconds": 0.20247110002674162,
+        "gap": 0.0,
+        "improved": true
+      },
+      {
+        "targets": {},
+        "radius": 0,
+        "average": 0,
+        "relocation": 0,
+        "status": "EMPTY",
+        "seconds": 0.0,
+        "gap": null,
+        "improved": false
+      }
+    ]
+  }
+]

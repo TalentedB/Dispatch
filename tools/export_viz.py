@@ -3,13 +3,13 @@
     python3 tools/export_viz.py                          # every solver x every input
     python3 tools/export_viz.py --only greedy,hungarian --inputs "inputs/brief_*.txt"
 
-Solvers come from solvers.txt, exactly like bench.py. Each solver's printed
-schedule (the brief's 'Vehicle N: HH:MM <action>' text) is replayed into a
-trace: per-vehicle time segments with the grid path driven, plus the
+Solvers come from solvers.txt, plus the staged Strategy 4 configuration.
+Dispatch supplies exact native traces; other solvers' printed schedules are
+replayed into traces. Both include per-vehicle grid paths and the independent
 checker's verdict and metrics. The trace format is documented in
 viz/README.md ("Trace contract") and typed in viz/src/contract/trace.ts.
 
-Writes viz/public/traces/manifest.json and viz/public/traces/<input>/<solver>.json.
+Updates viz/public/traces/manifest.json and selected <input>/<solver>.json files.
 """
 
 from __future__ import annotations
@@ -18,15 +18,23 @@ import argparse
 import glob
 import json
 import re
-import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tester.checker import check  # noqa: E402
-from tester.inputs import BASE, Call, InputError, Point, manhattan, parse_clock, parse_input  # noqa: E402
-from tester.runner import ROOT, load_solvers, run_solver  # noqa: E402
+from tester.inputs import (
+    BASE,
+    Call,
+    InputError,
+    Point,
+    manhattan,
+    parse_clock,
+    parse_input,
+)  # noqa: E402
+from tester.runner import ROOT, build_argv, load_solvers, run_solver  # noqa: E402
 
 SCHEMA = "uvec.trace/v1"
 OUT_DIR = ROOT / "viz" / "public" / "traces"
@@ -86,7 +94,7 @@ def replay(num_vehicles: int, calls: list[Call], text: str) -> list[dict]:
 
     def upcoming_duration(i: int, vid: int) -> int | None:
         started = None
-        for t, v, action, _ in lines[i + 1:]:
+        for t, v, action, _ in lines[i + 1 :]:
             if v != vid:
                 continue
             if action == "start job":
@@ -110,7 +118,12 @@ def replay(num_vehicles: int, calls: list[Call], text: str) -> list[dict]:
         for dx, dy in legs:
             path.append(Point(path[-1].x + dx, path[-1].y + dy))
         end = path[-1]
-        seg = {"kind": kind, "start": t, "end": t + manhattan(start, end), "path": [_xy(p) for p in path]}
+        seg = {
+            "kind": kind,
+            "start": t,
+            "end": t + manhattan(start, end),
+            "path": [_xy(p) for p in path],
+        }
         if kind == "to_job":
             ready = [c for c in open_calls if c.location == end and c.time <= t]
             duration = upcoming_duration(i, vid)
@@ -160,8 +173,14 @@ def replay(num_vehicles: int, calls: list[Call], text: str) -> list[dict]:
     return vehicles
 
 
-def build_trace(algorithm: str, scenario: str, input_text: str, output: str,
-                label: str | None = None, group: str | None = None) -> dict:
+def build_trace(
+    algorithm: str,
+    scenario: str,
+    input_text: str,
+    output: str,
+    label: str | None = None,
+    group: str | None = None,
+) -> dict:
     num_vehicles, calls = parse_input(input_text)
     vehicles = replay(num_vehicles, calls, output)
     result = check(num_vehicles, calls, output)
@@ -170,9 +189,22 @@ def build_trace(algorithm: str, scenario: str, input_text: str, output: str,
     return {
         "schema": SCHEMA,
         "algorithm": {"id": algorithm},
-        "scenario": {"id": scenario, "label": label or scenario, "group": group, "vehicles": num_vehicles},
-        "calls": [{"id": c.index, "time": c.time, "x": c.location.x, "y": c.location.y,
-                   "duration": c.duration} for c in calls],
+        "scenario": {
+            "id": scenario,
+            "label": label or scenario,
+            "group": group,
+            "vehicles": num_vehicles,
+        },
+        "calls": [
+            {
+                "id": c.index,
+                "time": c.time,
+                "x": c.location.x,
+                "y": c.location.y,
+                "duration": c.duration,
+            }
+            for c in calls
+        ],
         "vehicles": vehicles,
         "span": {"start": max(0, min(times, default=0) - 5), "end": max(times, default=0) + 5},
         "check": {"valid": result.valid, "errors": result.errors},
@@ -187,28 +219,79 @@ def _group(path: Path) -> str:
     return "brief" if path.stem.startswith("brief") else "custom"
 
 
+def export_run(name: str, command: str, path: Path, timeout: float) -> dict:
+    """Use dispatch's native trace; retain text replay for existing solvers.
+
+    Dispatch movements carry exact call IDs and physically truncated staging
+    paths that cannot be recovered unambiguously from the legacy text format.
+    """
+    if command.startswith("python3 "):
+        command = f'"{sys.executable}" ' + command[len("python3 ") :]
+    arguments = build_argv(command, path)
+    native_dispatch = any(
+        arguments[index : index + 2] == ["-m", "dispatch"] for index in range(len(arguments) - 1)
+    )
+    with tempfile.TemporaryDirectory(prefix="uvec-trace-") as directory:
+        trace_path = Path(directory) / "trace.json"
+        if native_dispatch:
+            command += f' --trace "{trace_path.as_posix()}"'
+        run = run_solver(command, path, timeout)
+        if not run.ok:
+            raise ValueError(run.stderr.strip()[-200:] or f"exit code {run.returncode}")
+        trace = (
+            json.loads(trace_path.read_text(encoding="utf-8"))
+            if native_dispatch
+            else (
+                json.loads(run.stdout)
+                if name == "abdullah"
+                else build_trace(name, path.stem, path.read_text(), run.stdout)
+            )
+        )
+    if not trace["check"]["valid"]:
+        raise ValueError("invalid schedule: " + "; ".join(trace["check"]["errors"][:3]))
+    trace["algorithm"]["id"] = name
+    trace["scenario"].update(label=path.stem.replace("_", " "), group=_group(path))
+    trace["metrics"]["computation_seconds"] = run.seconds
+    return trace
+
+
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--inputs", nargs="*", default=DEFAULT_INPUTS, help="input files or globs")
     ap.add_argument("--only", help="comma-separated solver names from solvers.txt")
     ap.add_argument("--out", type=Path, default=OUT_DIR)
-    ap.add_argument("--timeout", type=float, default=30.0)
+    ap.add_argument("--timeout", type=float, default=20.0)
     args = ap.parse_args(argv)
 
     solvers = load_solvers()
     # Native traces preserve standby travel, which the legacy text format cannot express.
     solvers["abdullah"] = f'"{sys.executable}" -m tools.abdullah_trace {{input}}'
+    # Staging is a visualizer capability and requires an explicit checker opt-in
+    # in bench.py; keep the legacy benchmark registry on base deployment.
+    solvers.setdefault("strategy4", "python -m dispatch {input}")
     if args.only:
         wanted = args.only.split(",")
+        missing = [name for name in wanted if name not in solvers]
+        if missing:
+            ap.error("unknown solver(s): " + ", ".join(missing))
         solvers = {n: c for n, c in solvers.items() if n in wanted}
     if not solvers:
         print("no solvers to run (check solvers.txt / --only)", file=sys.stderr)
         return 1
     paths = sorted({Path(p) for pattern in args.inputs for p in glob.glob(pattern)})
 
-    if args.out.exists():
-        shutil.rmtree(args.out)
-    scenarios = []
+    if not paths:
+        print("no input files found", file=sys.stderr)
+        return 1
+    # Incremental exports preserve other algorithms/scenarios, so --only does
+    # not remove the frontend's existing comparisons or unrelated files.
+    args.out.mkdir(parents=True, exist_ok=True)
+    manifest_path = args.out / "manifest.json"
+    previous = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    scenarios = {entry["id"]: entry for entry in previous.get("scenarios", [])}
+    failures = 0
     for path in paths:
         text = path.read_text()
         try:
@@ -216,32 +299,40 @@ def main(argv: list[str] | None = None) -> int:
         except InputError as e:
             print(f"skip {path.name}: {e}", file=sys.stderr)
             continue
-        entry = {"id": path.stem, "label": path.stem.replace("_", " "), "group": _group(path),
-                 "vehicles": num_vehicles, "calls": len(calls), "traces": {}}
+        entry = {
+            "id": path.stem,
+            "label": path.stem.replace("_", " "),
+            "group": _group(path),
+            "vehicles": num_vehicles,
+            "calls": len(calls),
+            "traces": dict(scenarios.get(path.stem, {}).get("traces", {})),
+        }
         for name, command in solvers.items():
-            if command.startswith("python3 "):
-                command = f'"{sys.executable}" ' + command[len("python3 "):]
-            run = run_solver(command, path, args.timeout)
-            if not run.ok:
-                print(f"  {name} on {path.stem}: failed ({run.stderr.strip()[-200:]})", file=sys.stderr)
+            try:
+                trace = export_run(name, command, path, args.timeout)
+            except (ValueError, OSError) as error:
+                failures += 1
+                entry["traces"].pop(name, None)
+                print(f"  {name} on {path.stem}: failed ({error})", file=sys.stderr)
                 continue
-            if name == "abdullah":
-                trace = json.loads(run.stdout)
-                trace["scenario"].update(label=entry["label"], group=entry["group"])
-            else:
-                trace = build_trace(name, path.stem, text, run.stdout, entry["label"], entry["group"])
             rel = f"{path.stem}/{name}.json"
             (args.out / path.stem).mkdir(parents=True, exist_ok=True)
             (args.out / rel).write_text(json.dumps(trace, separators=(",", ":")))
             entry["traces"][name] = rel
-            status = "ok" if trace["check"]["valid"] else f"INVALID ({len(trace['check']['errors'])} errors)"
+            status = (
+                "ok"
+                if trace["check"]["valid"]
+                else f"INVALID ({len(trace['check']['errors'])} errors)"
+            )
             print(f"  {path.stem:<22} {name:<18} {status}")
-        scenarios.append(entry)
+        scenarios[path.stem] = entry
 
-    manifest = {"schema": SCHEMA, "algorithms": list(solvers), "scenarios": scenarios}
+    entries = sorted(scenarios.values(), key=lambda entry: entry["id"])
+    algorithms = list(dict.fromkeys(name for entry in entries for name in entry["traces"]))
+    manifest = {"schema": SCHEMA, "algorithms": algorithms, "scenarios": entries}
     (args.out / "manifest.json").write_text(json.dumps(manifest, indent=1))
-    print(f"wrote {sum(len(s['traces']) for s in scenarios)} traces to {args.out.relative_to(ROOT)}")
-    return 0
+    print(f"manifest contains {sum(len(s['traces']) for s in entries)} traces in {args.out}")
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":

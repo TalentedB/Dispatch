@@ -9,19 +9,20 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-const METRICS: { key: string; label: string; unit: string; digits: number; hint: string }[] = [
+const METRICS: { key: string; label: string; unit: string; digits: number; hint: string; diagnostic?: boolean }[] = [
   { key: 'avg_response', label: 'Avg response', unit: 'min', digits: 1, hint: 'call in → job started' },
   { key: 'max_response', label: 'Worst response', unit: 'min', digits: 0, hint: 'longest single wait' },
   { key: 'avg_delay', label: 'Avg delay', unit: 'min', digits: 1, hint: 'response minus drive from base' },
-  { key: 'total_drive', label: 'Fleet driving', unit: 'min', digits: 0, hint: 'incl. returns to base' },
+  { key: 'total_drive', label: 'Fleet driving', unit: 'min', digits: 0, hint: 'incl. returns and repositioning' },
   { key: 'vehicles_used', label: 'Vehicles used', unit: '', digits: 0, hint: 'served ≥ 1 call' },
+  { key: 'computation_seconds', label: 'Program runtime', unit: 's', digits: 2, hint: 'diagnostic only', diagnostic: true },
 ]
 
 function Compare({ traces, panes, onPick }: { traces: Trace[]; panes: (string | null)[]; onPick: (pane: number, algo: string) => void }) {
   const sorted = [...traces].sort((a, b) => (a.metrics?.avg_response ?? Infinity) - (b.metrics?.avg_response ?? Infinity))
   return (
     <div className="comparison-list">
-      <div className="inspector-intro"><h2>Algorithm comparison</h2><p>Full-run results. Lower is better.</p></div>
+      <div className="inspector-intro"><h2>Algorithm comparison</h2><p>Sorted by response time. Runtime is diagnostic.</p></div>
       <div className="algorithm-choices">
         {sorted.map((t) => {
           const meta = algorithmMeta(t.algorithm.id, t.algorithm)
@@ -51,7 +52,7 @@ function Compare({ traces, panes, onPick }: { traces: Trace[]; panes: (string | 
           <section key={m.key} className="comparison-metric">
             <div className="mb-2 flex items-baseline justify-between gap-2">
               <span className="text-xs font-semibold whitespace-nowrap">{m.label}</span>
-              <span className="metric-hint" title="lower is better">{m.hint}</span>
+              <span className="metric-hint" title={m.diagnostic ? 'not part of the response objective' : 'lower is better'}>{m.hint}</span>
             </div>
             <div className="flex flex-col gap-1.5">
               {sorted.map((t) => {
@@ -61,9 +62,9 @@ function Compare({ traces, panes, onPick }: { traces: Trace[]; panes: (string | 
                   <div key={t.algorithm.id} className="flex items-center gap-2 text-xs">
                     <span className="w-20 truncate text-muted-foreground">{meta.short}</span>
                     <div className="metric-bar-track">
-                      <div className="metric-bar" style={{ transform: `scaleX(${(v ?? 0) / max})`, background: meta.color, opacity: v === best ? 1 : 0.45 }} />
+                      <div className="metric-bar" style={{ transform: `scaleX(${(v ?? 0) / max})`, background: meta.color, opacity: m.diagnostic ? 0.65 : v === best ? 1 : 0.45 }} />
                     </div>
-                    <span className={cn('w-20 text-right whitespace-nowrap tabular-nums', v === best && 'font-semibold text-foreground')}>
+                    <span className={cn('w-20 text-right whitespace-nowrap tabular-nums', !m.diagnostic && v === best && 'font-semibold text-foreground')}>
                       {v === undefined ? '–' : v.toFixed(m.digits)}{m.unit && <span className="text-muted-foreground"> {m.unit}</span>}
                     </span>
                   </div>

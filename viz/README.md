@@ -5,14 +5,75 @@ day, play at any speed, switch algorithms, and run two side by side.
 
 ```bash
 cd viz
-# Node 22.12+ (Node 24 was used to verify the redesign).
+# Node 24+ (also required by the native TypeScript playback tests).
 npm ci
 npm run traces     # runs every solver in ../solvers.txt on every input -> public/traces/
 npm run dev        # http://localhost:5173
 ```
 
-`npm run traces` is `python3 tools/export_viz.py` from the repo root. Use
+`npm run traces` is `python -m tools.export_viz` from the repo root. Use
 `--only greedy,hungarian` or `--inputs "inputs/brief_*.txt"` to limit it.
+
+The exporter also includes **Strategy 4: adaptive hybrid**. Install the root
+`requirements-dev.txt` in your active Python environment first. It uses exact
+small-queue dynamic programming and time-limited MILP for larger known queues,
+with adaptive staging. Emergency commitments remain locked and future calls
+are hidden from the online planner. `milp` is the same hybrid planner with base
+deployment; `dispatch_greedy` is its event-driven greedy baseline. The original
+four mainline algorithms are preserved.
+Strategy 4 keeps free vehicles at coverage-selected resting sites after its
+last known job. There is no end-of-file hospital return. A movement toward the
+hospital can still be a legitimate coverage relocation, especially with one free
+vehicle and a city centered on base. Base-deployment comparisons retain returns.
+
+```bash
+# From the repo root, using the active scheduler environment:
+python -m tools.export_viz --only strategy4,milp,dispatch_greedy
+python -m dispatch inputs/brief_small.txt --trace strategy4.json
+# In viz/:
+npm test
+npm run build
+npm run lint
+```
+
+Select Strategy 4 in either pane, or drop a standalone trace onto the app.
+Native traces preserve call IDs and the actual x-then-y movement history,
+including interrupted staging/return trips and zero-duration jobs. The existing
+playback engine already renders `reposition` segments. Program runtime is measured
+per process and shown separately from response delays. Optional `dispatch`
+diagnostics retain per-replan proof statuses, gaps, fallback reasons and reported
+map bounds; an optimal replan does not establish a globally optimal online day.
+
+Exports are incremental: `--only` updates selected traces while retaining other
+algorithms, scenarios and files. Failed runs return a nonzero exit status and are
+removed from that scenario's manifest entries. The exporter runs each solver
+once, requests `--trace` for `python -m dispatch` commands, and retains legacy
+text replay for all other commands. The default process timeout is 20 seconds.
+The app remains a playback frontend; Python/HiGHS run during trace generation.
+
+Coverage is availability-aware. The 3D terrain and coverage heatmap use remaining
+busy minutes plus Manhattan travel from where an ambulance becomes free. Native
+readiness snapshots include currently reported queued work and are sampled only
+at or before playback time. Legacy traces, without queue history, use the current
+locked job's remaining travel/service. The terrain's free-only option includes
+interruptible repositioning and return travel. Physical vehicle markers always
+stay on their actual routes; projected readiness never teleports a vehicle.
+The deployment planner refreshes these forecasts while jobs are in progress,
+checks more closely near readiness, and moves only uncommitted, unqueued vehicles.
+
+The city is centered on base and grows only when calls are reported. It starts
+at `[-5,5]` on both axes (10 × 10 blocks) unless a native trace configures another
+initial extent. A reported call at `(7,0)` changes it to `[-7,7]` on both axes
+(14 × 14 blocks). Negative coordinates follow the same rule. Top-down, 3D and
+heatmaps use the currently sampled map size, including when scrubbing backwards;
+future calls and future route endpoints never determine the viewport. The map
+size label counts blocks, while boundary intersections are included in coverage.
+When bounds expand, the top-down and 3D cameras ease to the new fit over 420 ms.
+The logical city size and report events update immediately; only the camera
+interpolates. Repeated expansions retarget from the visible camera position.
+Dragging, scrolling or orbiting cancels the automatic zoom. Reduced-motion
+preferences use an immediate camera fit instead. Initial loading has no zoom-in
+animation.
 
 ## What you can do
 
@@ -32,7 +93,7 @@ npm run dev        # http://localhost:5173
 | View | Shows |
 |---|---|
 | **Top-down** | The whole grid, north up. Base, emergencies (diamonds: red pulsing = waiting, amber = vehicle en route, rose = being attended, green dot = resolved) and vehicles. Scroll to zoom, drag to pan, double-click to reset. |
-| **Isometric 3D** | The grid as terrain. Height and colour = drive time from each intersection to the nearest vehicle (option: nearest *free* vehicle, or flat), so vehicles sit in valleys and badly covered areas are peaks. Each open emergency is a pillar whose height is the distance from its responding vehicle (or from the nearest vehicle while it waits). Drag to orbit. |
+| **Isometric 3D** | The grid as terrain. Height and colour = estimated response minutes, including busy time and travel from projected readiness locations (option: free vehicles only, or flat). Each open emergency is a pillar showing its own wait/response. Drag to orbit. |
 | **Timeline** | A Gantt chart: one lane per vehicle, coloured by state, with the waiting-calls count underneath. Click or drag to seek. |
 
 ### Overlays (toggle per pane under *Layers*)
@@ -43,7 +104,7 @@ npm run dev        # http://localhost:5173
 | Distance to assignment: remaining route and blocks to the assigned emergency | ✓ | ✓ | |
 | Time to complete: ETA to the scene, minutes until the job is done, on-scene progress rings, wait times | ✓ | ✓ | wait and drive bars per call |
 | Trails: the last 45 minutes of driving | ✓ | ✓ | |
-| Coverage heatmap: drive time to the nearest vehicle | ✓ | (it's the terrain) | |
+| Coverage heatmap: response time including remaining busy work | ✓ | (it's the terrain) | |
 | Upcoming calls: calls arriving in the next hour (the algorithms can't see these) | ✓ | ✓ | |
 
 ## Trace contract
@@ -97,6 +158,12 @@ Rules:
    can't express, like `reposition` (moving to a standby point) or `idle` away from base.
 3. *(Optional)* give it a name, description and colour in `src/algorithms/registry.ts`. Unknown ids
    work without an entry.
+
+For the hybrid scheduler, use `dispatch/trace.py` and `--trace` rather than text
+replay: legacy output cannot unambiguously identify duplicate calls and staging
+movements. Native paths end at their actual traversed endpoint, so a redirected
+vehicle does not jump to its former target. Default traces include the physical
+initial staging at minute zero; use `--start-time` to configure a different start.
 
 ## Extending the frontend
 

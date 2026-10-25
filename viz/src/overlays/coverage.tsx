@@ -1,25 +1,23 @@
 import { useEffect, useRef } from 'react'
 import { Radar } from 'lucide-react'
-import { nearestDistance } from '@/engine/sample'
-import type { XY } from '@/contract/trace'
+import { nearestResponseTime } from '@/engine/sample'
 import { distanceColor } from '@/views/colors'
 import type { Map2DContext, OverlayPlugin } from './types'
 
-/** Heatmap of how far the nearest vehicle is from every intersection. */
-function CoverageLayer({ prepared, frame, sy }: Map2DContext) {
+/** Heatmap of response minutes, including locked travel and service. */
+function CoverageLayer({ frame, sy }: Map2DContext) {
   const ref = useRef<HTMLCanvasElement>(null)
-  const { minX, maxX, minY, maxY } = prepared.bounds
+  const { minX, maxX, minY, maxY } = frame.bounds
   const w = maxX - minX + 1
   const h = maxY - minY + 1
   useEffect(() => {
     const ctx = ref.current?.getContext('2d')
     if (!ctx) return
     const img = ctx.createImageData(w, h)
-    const pts: XY[] = frame.vehicles.map((v) => [v.x, v.y])
     const scale = Math.max(8, (w + h) / 2)
     for (let j = 0; j < h; j++) {
       for (let i = 0; i < w; i++) {
-        const d = nearestDistance(minX + i, maxY - j, pts)
+        const d = nearestResponseTime(minX + i, maxY - j, frame.vehicles)
         const [r, g, b] = distanceColor(d / scale)
         const k = (j * w + i) * 4
         img.data[k] = r
@@ -40,7 +38,7 @@ function CoverageLayer({ prepared, frame, sy }: Map2DContext) {
 export const coverageOverlay: OverlayPlugin = {
   id: 'coverage',
   label: 'Coverage heatmap',
-  description: 'Shades every intersection by the drive time to the nearest vehicle (green = close, red = far).',
+  description: 'Response time including remaining locked work and Manhattan travel (green = soon, red = later).',
   icon: Radar,
   defaultOn: false,
   under: true,

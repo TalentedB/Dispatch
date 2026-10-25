@@ -42,7 +42,7 @@ class Result:
     detail: str  # first error / stderr line, for the failure list
 
 
-def run_one(name: str, command: str, path: Path, timeout: float) -> Result:
+def run_one(name: str, command: str, path: Path, timeout: float, *, allow_reposition: bool = False) -> Result:
     num_vehicles, calls = read_input(str(path))
     run = run_solver(command, path, timeout)
 
@@ -56,7 +56,7 @@ def run_one(name: str, command: str, path: Path, timeout: float) -> Result:
         last = (run.stderr.strip().splitlines() or [f"exit code {run.returncode}"])[-1]
         return Result(name, path.stem, "CRASH", None, None, run.seconds, last)
 
-    result = check(num_vehicles, calls, run.stdout)
+    result = check(num_vehicles, calls, run.stdout, allow_reposition=allow_reposition)
     return Result(name, path.stem, "ok" if result.valid else "INVALID", result,
                   matches_expected(run.stdout, path), run.seconds,
                   result.errors[0] if result.errors else "")
@@ -136,7 +136,8 @@ def main() -> int:
     ap.add_argument("--inputs", nargs="+", help="input file globs (default: inputs/*.txt inputs/generated/*.txt)")
     ap.add_argument("--detail", action="store_true", help="show a table for each input")
     ap.add_argument("--sort", default="avg_response", choices=SORT_KEYS, help="summary sort order")
-    ap.add_argument("--timeout", type=float, default=10.0, help="seconds per run (default 10)")
+    ap.add_argument("--timeout", type=float, default=20.0, help="seconds per complete simulation (default 20)")
+    ap.add_argument("--allow-reposition", action="store_true", help="validate optional staging events")
     args = ap.parse_args()
 
     solvers = load_solvers()
@@ -165,7 +166,8 @@ def main() -> int:
     if not usable:
         ap.error("no input files found (generate some with: python3 tools/generate_inputs.py)")
 
-    results = [run_one(name, command, path, args.timeout) for path in usable for name, command in solvers.items()]
+    results = [run_one(name, command, path, args.timeout, allow_reposition=args.allow_reposition)
+               for path in usable for name, command in solvers.items()]
 
     print(f"{len(solvers)} solvers x {len(usable)} inputs\n")
     summarize(results, list(solvers), args.sort)
