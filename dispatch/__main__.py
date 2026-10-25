@@ -17,6 +17,7 @@ from tester.checker import check
 from .coverage import CoverageConfig
 from .optimizer import SolverConfig
 from .simulation import SimulationConfig, simulate
+from .trace import build_trace
 
 
 def main():
@@ -83,6 +84,9 @@ def main():
     argument_parser.add_argument(
         "--report", type=Path, help="write assignments, solver diagnostics and metrics as JSON"
     )
+    argument_parser.add_argument(
+        "--trace", type=Path, help="write a uvec.trace/v1 JSON file for the existing visualizer"
+    )
     args = argument_parser.parse_args()
     if not math.isfinite(args.run_time_limit) or args.run_time_limit < 0:
         argument_parser.error("run time limit must be finite and nonnegative")
@@ -128,6 +132,18 @@ def main():
     }
     if args.report:
         args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    if args.trace:
+        if args.scheduler == "milp":
+            algorithm = "strategy4" if args.staging else "milp"
+        else:
+            algorithm = "greedy_staged" if args.staging else "dispatch_greedy"
+        trace = build_trace(
+            result,
+            Path(args.input).stem,
+            algorithm,
+            computation_seconds=perf_counter() - PROCESS_STARTED,
+        )
+        args.trace.write_text(json.dumps(trace, separators=(",", ":")), encoding="utf-8")
     for plan in result.optimizations:
         if plan.fallback_reason:
             print(

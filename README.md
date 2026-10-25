@@ -1,6 +1,7 @@
 # UVec2026 — Emergency Vehicle Dispatcher
 
-Requires Python 3.10+, standard library only (`pytest` for tests).
+Requires Python 3.10+. The original `solver/` and tester use the standard library;
+install `requirements-dev.txt` for the hybrid scheduler and tests.
 
 ## Solver
 
@@ -23,7 +24,7 @@ Compare modes on thousands of random scenarios: `python3 tools/stress.py`.
 
 ```bash
 python3 tools/export_viz.py        # run every solver in solvers.txt on every input -> viz/public/traces/
-cd viz && npm install && npm run dev
+cd viz && npm ci && npm run dev
 ```
 
 A React app (shadcn/ui, three.js) that replays the schedules. It has a timeline scrubber, play and
@@ -31,28 +32,26 @@ speed controls, any algorithm in any pane, and two algorithms side by side on a 
 top-down grid, isometric 3D terrain (height = drive time to the nearest vehicle), and a Gantt timeline.
 Toggleable overlays show vehicle state, distance to the assigned emergency, time to complete,
 trails, a coverage heatmap and upcoming calls. Algorithms plug in through a JSON trace contract.
-See [viz/README.md](viz/README.md).
+Strategy 4 appears in the algorithm picker alongside the mainline algorithms.
+It exports exact call IDs, staging paths, and service periods directly from the
+simulation. To update just that algorithm without removing other comparisons:
 
----
+```bash
+python -m tools.export_viz --only strategy4
+# Or export a standalone trace and drop it onto the frontend:
+python -m dispatch inputs/brief_small.txt --trace strategy4.json
+```
 
-# Solver Test Bench
+Trace generation requires the scheduler dependencies and uses the same Python
+interpreter for subprocesses. Program runtime is shown separately from simulated
+response time. This frontend replays completed runs; it does not run Python or
+HiGHS in the browser. See [viz/README.md](viz/README.md).
 
-A black-box tester for emergency-dispatch solvers. It runs any number of
-solver programs on a set of inputs, checks every output against the rules in
-the brief, scores it, and prints a comparison table. It shares no code with
-`solver/`, so it acts as an independent judge.
+## Hybrid scheduler and test bench
 
-# UVec2026 — Emergency Dispatch and Solver Test Bench
-
-A black-box tester for UVEC 2026 emergency-dispatch solvers. It runs any number
-of solver programs on a set of inputs, checks every output against the rules
-in the brief, scores it, and prints a comparison table. The original tester is
-preserved; `dispatch/` now supplies MILP and greedy solvers through that same
-black-box interface.
-
-Requires Python 3.10+, standard library only (`pytest` for the tester's own tests).
-The optional scheduling package requires HiGHS; its pinned wheel is tested on
-Python 3.12 / Windows. See the install commands below for solver dependencies.
+The original `solver/` algorithms and independent test bench remain available.
+`dispatch/` adds the DP/MILP scheduler and adaptive coverage. Both feed the
+existing visualizer through `uvec.trace/v1`; no separate frontend is required.
 
 ## Run the scheduler
 
@@ -264,12 +263,11 @@ Add your own by dropping a `.txt` into `inputs/` (plus a `.expected` if you know
 
 ## Third-party code
 
-None in the solver or tester; they use only the Python standard library. Tests use [pytest](https://pytest.org) (MIT license).
-The visualizer in `viz/` uses open-source npm packages (React, Vite, Tailwind CSS, shadcn/ui, Base UI,
-three.js, react-three-fiber, drei, lucide icons, Geist font), listed with licenses in
+The original `solver/` algorithms and tester use the Python standard library.
+The visualizer's npm dependencies and licenses are listed in
 [viz/README.md](viz/README.md#third-party-code).
 
-The original tester remains standard-library-only. The solver uses
+The hybrid scheduler uses
 [HiGHS/highspy](https://highs.dev/) 1.15.1 (MIT) for MILP branch-and-cut,
 with NumPy (BSD-3-Clause) as its array dependency. Tests use
 [pytest](https://pytest.org) (MIT); `requirements-dev.txt` includes it.

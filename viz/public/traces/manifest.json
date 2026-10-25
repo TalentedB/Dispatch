@@ -4,61 +4,12 @@
   "greedy",
   "closest_idle",
   "nearest_neighbor",
-  "hungarian"
+  "hungarian",
+  "dispatch_greedy",
+  "milp",
+  "strategy4"
  ],
  "scenarios": [
-  {
-   "id": "brief_1_vehicle",
-   "label": "brief 1 vehicle",
-   "group": "brief",
-   "vehicles": 1,
-   "calls": 3,
-   "traces": {
-    "greedy": "brief_1_vehicle/greedy.json",
-    "closest_idle": "brief_1_vehicle/closest_idle.json",
-    "nearest_neighbor": "brief_1_vehicle/nearest_neighbor.json",
-    "hungarian": "brief_1_vehicle/hungarian.json"
-   }
-  },
-  {
-   "id": "brief_2_vehicles",
-   "label": "brief 2 vehicles",
-   "group": "brief",
-   "vehicles": 2,
-   "calls": 3,
-   "traces": {
-    "greedy": "brief_2_vehicles/greedy.json",
-    "closest_idle": "brief_2_vehicles/closest_idle.json",
-    "nearest_neighbor": "brief_2_vehicles/nearest_neighbor.json",
-    "hungarian": "brief_2_vehicles/hungarian.json"
-   }
-  },
-  {
-   "id": "brief_small",
-   "label": "brief small",
-   "group": "brief",
-   "vehicles": 1,
-   "calls": 2,
-   "traces": {
-    "greedy": "brief_small/greedy.json",
-    "closest_idle": "brief_small/closest_idle.json",
-    "nearest_neighbor": "brief_small/nearest_neighbor.json",
-    "hungarian": "brief_small/hungarian.json"
-   }
-  },
-  {
-   "id": "edge_cases",
-   "label": "edge cases",
-   "group": "custom",
-   "vehicles": 2,
-   "calls": 7,
-   "traces": {
-    "greedy": "edge_cases/greedy.json",
-    "closest_idle": "edge_cases/closest_idle.json",
-    "nearest_neighbor": "edge_cases/nearest_neighbor.json",
-    "hungarian": "edge_cases/hungarian.json"
-   }
-  },
   {
    "id": "big_fleet_1",
    "label": "big fleet 1",
@@ -69,7 +20,10 @@
     "greedy": "big_fleet_1/greedy.json",
     "closest_idle": "big_fleet_1/closest_idle.json",
     "nearest_neighbor": "big_fleet_1/nearest_neighbor.json",
-    "hungarian": "big_fleet_1/hungarian.json"
+    "hungarian": "big_fleet_1/hungarian.json",
+    "dispatch_greedy": "big_fleet_1/dispatch_greedy.json",
+    "milp": "big_fleet_1/milp.json",
+    "strategy4": "big_fleet_1/strategy4.json"
    }
   },
   {
@@ -82,7 +36,10 @@
     "greedy": "big_fleet_2/greedy.json",
     "closest_idle": "big_fleet_2/closest_idle.json",
     "nearest_neighbor": "big_fleet_2/nearest_neighbor.json",
-    "hungarian": "big_fleet_2/hungarian.json"
+    "hungarian": "big_fleet_2/hungarian.json",
+    "dispatch_greedy": "big_fleet_2/dispatch_greedy.json",
+    "milp": "big_fleet_2/milp.json",
+    "strategy4": "big_fleet_2/strategy4.json"
    }
   },
   {
@@ -95,7 +52,58 @@
     "greedy": "big_fleet_3/greedy.json",
     "closest_idle": "big_fleet_3/closest_idle.json",
     "nearest_neighbor": "big_fleet_3/nearest_neighbor.json",
-    "hungarian": "big_fleet_3/hungarian.json"
+    "hungarian": "big_fleet_3/hungarian.json",
+    "dispatch_greedy": "big_fleet_3/dispatch_greedy.json",
+    "milp": "big_fleet_3/milp.json",
+    "strategy4": "big_fleet_3/strategy4.json"
+   }
+  },
+  {
+   "id": "brief_1_vehicle",
+   "label": "brief 1 vehicle",
+   "group": "brief",
+   "vehicles": 1,
+   "calls": 3,
+   "traces": {
+    "greedy": "brief_1_vehicle/greedy.json",
+    "closest_idle": "brief_1_vehicle/closest_idle.json",
+    "nearest_neighbor": "brief_1_vehicle/nearest_neighbor.json",
+    "hungarian": "brief_1_vehicle/hungarian.json",
+    "dispatch_greedy": "brief_1_vehicle/dispatch_greedy.json",
+    "milp": "brief_1_vehicle/milp.json",
+    "strategy4": "brief_1_vehicle/strategy4.json"
+   }
+  },
+  {
+   "id": "brief_2_vehicles",
+   "label": "brief 2 vehicles",
+   "group": "brief",
+   "vehicles": 2,
+   "calls": 3,
+   "traces": {
+    "greedy": "brief_2_vehicles/greedy.json",
+    "closest_idle": "brief_2_vehicles/closest_idle.json",
+    "nearest_neighbor": "brief_2_vehicles/nearest_neighbor.json",
+    "hungarian": "brief_2_vehicles/hungarian.json",
+    "dispatch_greedy": "brief_2_vehicles/dispatch_greedy.json",
+    "milp": "brief_2_vehicles/milp.json",
+    "strategy4": "brief_2_vehicles/strategy4.json"
+   }
+  },
+  {
+   "id": "brief_small",
+   "label": "brief small",
+   "group": "brief",
+   "vehicles": 1,
+   "calls": 2,
+   "traces": {
+    "greedy": "brief_small/greedy.json",
+    "closest_idle": "brief_small/closest_idle.json",
+    "nearest_neighbor": "brief_small/nearest_neighbor.json",
+    "hungarian": "brief_small/hungarian.json",
+    "dispatch_greedy": "brief_small/dispatch_greedy.json",
+    "milp": "brief_small/milp.json",
+    "strategy4": "brief_small/strategy4.json"
    }
   },
   {
@@ -108,7 +116,10 @@
     "greedy": "burst_1/greedy.json",
     "closest_idle": "burst_1/closest_idle.json",
     "nearest_neighbor": "burst_1/nearest_neighbor.json",
-    "hungarian": "burst_1/hungarian.json"
+    "hungarian": "burst_1/hungarian.json",
+    "dispatch_greedy": "burst_1/dispatch_greedy.json",
+    "milp": "burst_1/milp.json",
+    "strategy4": "burst_1/strategy4.json"
    }
   },
   {
@@ -121,7 +132,10 @@
     "greedy": "burst_2/greedy.json",
     "closest_idle": "burst_2/closest_idle.json",
     "nearest_neighbor": "burst_2/nearest_neighbor.json",
-    "hungarian": "burst_2/hungarian.json"
+    "hungarian": "burst_2/hungarian.json",
+    "dispatch_greedy": "burst_2/dispatch_greedy.json",
+    "milp": "burst_2/milp.json",
+    "strategy4": "burst_2/strategy4.json"
    }
   },
   {
@@ -134,7 +148,10 @@
     "greedy": "burst_3/greedy.json",
     "closest_idle": "burst_3/closest_idle.json",
     "nearest_neighbor": "burst_3/nearest_neighbor.json",
-    "hungarian": "burst_3/hungarian.json"
+    "hungarian": "burst_3/hungarian.json",
+    "dispatch_greedy": "burst_3/dispatch_greedy.json",
+    "milp": "burst_3/milp.json",
+    "strategy4": "burst_3/strategy4.json"
    }
   },
   {
@@ -147,7 +164,10 @@
     "greedy": "clustered_1/greedy.json",
     "closest_idle": "clustered_1/closest_idle.json",
     "nearest_neighbor": "clustered_1/nearest_neighbor.json",
-    "hungarian": "clustered_1/hungarian.json"
+    "hungarian": "clustered_1/hungarian.json",
+    "dispatch_greedy": "clustered_1/dispatch_greedy.json",
+    "milp": "clustered_1/milp.json",
+    "strategy4": "clustered_1/strategy4.json"
    }
   },
   {
@@ -160,7 +180,10 @@
     "greedy": "clustered_2/greedy.json",
     "closest_idle": "clustered_2/closest_idle.json",
     "nearest_neighbor": "clustered_2/nearest_neighbor.json",
-    "hungarian": "clustered_2/hungarian.json"
+    "hungarian": "clustered_2/hungarian.json",
+    "dispatch_greedy": "clustered_2/dispatch_greedy.json",
+    "milp": "clustered_2/milp.json",
+    "strategy4": "clustered_2/strategy4.json"
    }
   },
   {
@@ -173,7 +196,26 @@
     "greedy": "clustered_3/greedy.json",
     "closest_idle": "clustered_3/closest_idle.json",
     "nearest_neighbor": "clustered_3/nearest_neighbor.json",
-    "hungarian": "clustered_3/hungarian.json"
+    "hungarian": "clustered_3/hungarian.json",
+    "dispatch_greedy": "clustered_3/dispatch_greedy.json",
+    "milp": "clustered_3/milp.json",
+    "strategy4": "clustered_3/strategy4.json"
+   }
+  },
+  {
+   "id": "edge_cases",
+   "label": "edge cases",
+   "group": "custom",
+   "vehicles": 2,
+   "calls": 7,
+   "traces": {
+    "greedy": "edge_cases/greedy.json",
+    "closest_idle": "edge_cases/closest_idle.json",
+    "nearest_neighbor": "edge_cases/nearest_neighbor.json",
+    "hungarian": "edge_cases/hungarian.json",
+    "dispatch_greedy": "edge_cases/dispatch_greedy.json",
+    "milp": "edge_cases/milp.json",
+    "strategy4": "edge_cases/strategy4.json"
    }
   },
   {
@@ -186,7 +228,10 @@
     "greedy": "input_abdullah/greedy.json",
     "closest_idle": "input_abdullah/closest_idle.json",
     "nearest_neighbor": "input_abdullah/nearest_neighbor.json",
-    "hungarian": "input_abdullah/hungarian.json"
+    "hungarian": "input_abdullah/hungarian.json",
+    "dispatch_greedy": "input_abdullah/dispatch_greedy.json",
+    "milp": "input_abdullah/milp.json",
+    "strategy4": "input_abdullah/strategy4.json"
    }
   },
   {
@@ -199,7 +244,10 @@
     "greedy": "light_day_1/greedy.json",
     "closest_idle": "light_day_1/closest_idle.json",
     "nearest_neighbor": "light_day_1/nearest_neighbor.json",
-    "hungarian": "light_day_1/hungarian.json"
+    "hungarian": "light_day_1/hungarian.json",
+    "dispatch_greedy": "light_day_1/dispatch_greedy.json",
+    "milp": "light_day_1/milp.json",
+    "strategy4": "light_day_1/strategy4.json"
    }
   },
   {
@@ -212,7 +260,10 @@
     "greedy": "light_day_2/greedy.json",
     "closest_idle": "light_day_2/closest_idle.json",
     "nearest_neighbor": "light_day_2/nearest_neighbor.json",
-    "hungarian": "light_day_2/hungarian.json"
+    "hungarian": "light_day_2/hungarian.json",
+    "dispatch_greedy": "light_day_2/dispatch_greedy.json",
+    "milp": "light_day_2/milp.json",
+    "strategy4": "light_day_2/strategy4.json"
    }
   },
   {
@@ -225,7 +276,10 @@
     "greedy": "light_day_3/greedy.json",
     "closest_idle": "light_day_3/closest_idle.json",
     "nearest_neighbor": "light_day_3/nearest_neighbor.json",
-    "hungarian": "light_day_3/hungarian.json"
+    "hungarian": "light_day_3/hungarian.json",
+    "dispatch_greedy": "light_day_3/dispatch_greedy.json",
+    "milp": "light_day_3/milp.json",
+    "strategy4": "light_day_3/strategy4.json"
    }
   },
   {
@@ -238,7 +292,10 @@
     "greedy": "one_axis_1/greedy.json",
     "closest_idle": "one_axis_1/closest_idle.json",
     "nearest_neighbor": "one_axis_1/nearest_neighbor.json",
-    "hungarian": "one_axis_1/hungarian.json"
+    "hungarian": "one_axis_1/hungarian.json",
+    "dispatch_greedy": "one_axis_1/dispatch_greedy.json",
+    "milp": "one_axis_1/milp.json",
+    "strategy4": "one_axis_1/strategy4.json"
    }
   },
   {
@@ -251,7 +308,10 @@
     "greedy": "one_axis_2/greedy.json",
     "closest_idle": "one_axis_2/closest_idle.json",
     "nearest_neighbor": "one_axis_2/nearest_neighbor.json",
-    "hungarian": "one_axis_2/hungarian.json"
+    "hungarian": "one_axis_2/hungarian.json",
+    "dispatch_greedy": "one_axis_2/dispatch_greedy.json",
+    "milp": "one_axis_2/milp.json",
+    "strategy4": "one_axis_2/strategy4.json"
    }
   },
   {
@@ -264,7 +324,10 @@
     "greedy": "one_axis_3/greedy.json",
     "closest_idle": "one_axis_3/closest_idle.json",
     "nearest_neighbor": "one_axis_3/nearest_neighbor.json",
-    "hungarian": "one_axis_3/hungarian.json"
+    "hungarian": "one_axis_3/hungarian.json",
+    "dispatch_greedy": "one_axis_3/dispatch_greedy.json",
+    "milp": "one_axis_3/milp.json",
+    "strategy4": "one_axis_3/strategy4.json"
    }
   },
   {
@@ -277,7 +340,10 @@
     "greedy": "overloaded_1/greedy.json",
     "closest_idle": "overloaded_1/closest_idle.json",
     "nearest_neighbor": "overloaded_1/nearest_neighbor.json",
-    "hungarian": "overloaded_1/hungarian.json"
+    "hungarian": "overloaded_1/hungarian.json",
+    "dispatch_greedy": "overloaded_1/dispatch_greedy.json",
+    "milp": "overloaded_1/milp.json",
+    "strategy4": "overloaded_1/strategy4.json"
    }
   },
   {
@@ -290,7 +356,10 @@
     "greedy": "overloaded_2/greedy.json",
     "closest_idle": "overloaded_2/closest_idle.json",
     "nearest_neighbor": "overloaded_2/nearest_neighbor.json",
-    "hungarian": "overloaded_2/hungarian.json"
+    "hungarian": "overloaded_2/hungarian.json",
+    "dispatch_greedy": "overloaded_2/dispatch_greedy.json",
+    "milp": "overloaded_2/milp.json",
+    "strategy4": "overloaded_2/strategy4.json"
    }
   },
   {
@@ -303,7 +372,10 @@
     "greedy": "overloaded_3/greedy.json",
     "closest_idle": "overloaded_3/closest_idle.json",
     "nearest_neighbor": "overloaded_3/nearest_neighbor.json",
-    "hungarian": "overloaded_3/hungarian.json"
+    "hungarian": "overloaded_3/hungarian.json",
+    "dispatch_greedy": "overloaded_3/dispatch_greedy.json",
+    "milp": "overloaded_3/milp.json",
+    "strategy4": "overloaded_3/strategy4.json"
    }
   },
   {
@@ -316,7 +388,10 @@
     "greedy": "rush_hour_1/greedy.json",
     "closest_idle": "rush_hour_1/closest_idle.json",
     "nearest_neighbor": "rush_hour_1/nearest_neighbor.json",
-    "hungarian": "rush_hour_1/hungarian.json"
+    "hungarian": "rush_hour_1/hungarian.json",
+    "dispatch_greedy": "rush_hour_1/dispatch_greedy.json",
+    "milp": "rush_hour_1/milp.json",
+    "strategy4": "rush_hour_1/strategy4.json"
    }
   },
   {
@@ -329,7 +404,10 @@
     "greedy": "rush_hour_2/greedy.json",
     "closest_idle": "rush_hour_2/closest_idle.json",
     "nearest_neighbor": "rush_hour_2/nearest_neighbor.json",
-    "hungarian": "rush_hour_2/hungarian.json"
+    "hungarian": "rush_hour_2/hungarian.json",
+    "dispatch_greedy": "rush_hour_2/dispatch_greedy.json",
+    "milp": "rush_hour_2/milp.json",
+    "strategy4": "rush_hour_2/strategy4.json"
    }
   },
   {
@@ -342,7 +420,10 @@
     "greedy": "rush_hour_3/greedy.json",
     "closest_idle": "rush_hour_3/closest_idle.json",
     "nearest_neighbor": "rush_hour_3/nearest_neighbor.json",
-    "hungarian": "rush_hour_3/hungarian.json"
+    "hungarian": "rush_hour_3/hungarian.json",
+    "dispatch_greedy": "rush_hour_3/dispatch_greedy.json",
+    "milp": "rush_hour_3/milp.json",
+    "strategy4": "rush_hour_3/strategy4.json"
    }
   },
   {
@@ -355,7 +436,10 @@
     "greedy": "single_vehicle_1/greedy.json",
     "closest_idle": "single_vehicle_1/closest_idle.json",
     "nearest_neighbor": "single_vehicle_1/nearest_neighbor.json",
-    "hungarian": "single_vehicle_1/hungarian.json"
+    "hungarian": "single_vehicle_1/hungarian.json",
+    "dispatch_greedy": "single_vehicle_1/dispatch_greedy.json",
+    "milp": "single_vehicle_1/milp.json",
+    "strategy4": "single_vehicle_1/strategy4.json"
    }
   },
   {
@@ -368,7 +452,10 @@
     "greedy": "single_vehicle_2/greedy.json",
     "closest_idle": "single_vehicle_2/closest_idle.json",
     "nearest_neighbor": "single_vehicle_2/nearest_neighbor.json",
-    "hungarian": "single_vehicle_2/hungarian.json"
+    "hungarian": "single_vehicle_2/hungarian.json",
+    "dispatch_greedy": "single_vehicle_2/dispatch_greedy.json",
+    "milp": "single_vehicle_2/milp.json",
+    "strategy4": "single_vehicle_2/strategy4.json"
    }
   },
   {
@@ -381,7 +468,10 @@
     "greedy": "single_vehicle_3/greedy.json",
     "closest_idle": "single_vehicle_3/closest_idle.json",
     "nearest_neighbor": "single_vehicle_3/nearest_neighbor.json",
-    "hungarian": "single_vehicle_3/hungarian.json"
+    "hungarian": "single_vehicle_3/hungarian.json",
+    "dispatch_greedy": "single_vehicle_3/dispatch_greedy.json",
+    "milp": "single_vehicle_3/milp.json",
+    "strategy4": "single_vehicle_3/strategy4.json"
    }
   }
  ]

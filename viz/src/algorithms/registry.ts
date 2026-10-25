@@ -14,6 +14,24 @@ export interface AlgorithmMeta {
 }
 
 const KNOWN: Record<string, Omit<AlgorithmMeta, 'id'>> = {
+  strategy4: {
+    label: 'Strategy 4: adaptive hybrid',
+    short: 'Strategy 4',
+    description: 'Online DP/MILP scheduling with locked emergency commitments and adaptive resting coverage. Only reported calls inform decisions.',
+    color: themeColor('series-5'),
+  },
+  milp: {
+    label: 'Hybrid DP/MILP, base deployment',
+    short: 'Hybrid base',
+    description: 'Optimizes known queued calls with exact small-queue DP or time-limited MILP. Returns idle vehicles to base.',
+    color: themeColor('series-6'),
+  },
+  dispatch_greedy: {
+    label: 'Dispatch greedy, base deployment',
+    short: 'Dispatch greedy',
+    description: 'Earliest-arrival baseline using the hybrid scheduler’s event-driven simulator, with base returns.',
+    color: themeColor('series-1'),
+  },
   greedy: {
     label: 'Greedy earliest arrival',
     short: 'Greedy',

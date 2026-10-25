@@ -5,14 +5,47 @@ day, play at any speed, switch algorithms, and run two side by side.
 
 ```bash
 cd viz
-# Node 22.12+ (Node 24 was used to verify the redesign).
+# Node 24+ (also required by the native TypeScript playback tests).
 npm ci
 npm run traces     # runs every solver in ../solvers.txt on every input -> public/traces/
 npm run dev        # http://localhost:5173
 ```
 
-`npm run traces` is `python3 tools/export_viz.py` from the repo root. Use
+`npm run traces` is `python -m tools.export_viz` from the repo root. Use
 `--only greedy,hungarian` or `--inputs "inputs/brief_*.txt"` to limit it.
+
+The exporter also includes **Strategy 4: adaptive hybrid**. Install the root
+`requirements-dev.txt` in your active Python environment first. It uses exact
+small-queue dynamic programming and time-limited MILP for larger known queues,
+with adaptive staging. Emergency commitments remain locked and future calls
+are hidden from the online planner. `milp` is the same hybrid planner with base
+deployment; `dispatch_greedy` is its event-driven greedy baseline. The original
+four mainline algorithms are preserved.
+
+```bash
+# From the repo root, using the active scheduler environment:
+python -m tools.export_viz --only strategy4,milp,dispatch_greedy
+python -m dispatch inputs/brief_small.txt --trace strategy4.json
+# In viz/:
+npm test
+npm run build
+npm run lint
+```
+
+Select Strategy 4 in either pane, or drop a standalone trace onto the app.
+Native traces preserve call IDs and the actual x-then-y movement history,
+including interrupted staging/return trips and zero-duration jobs. The existing
+playback engine already renders `reposition` segments. Program runtime is measured
+per process and shown separately from response delays. Optional `dispatch`
+diagnostics retain per-replan proof statuses, gaps, fallback reasons and reported
+map bounds; an optimal replan does not establish a globally optimal online day.
+
+Exports are incremental: `--only` updates selected traces while retaining other
+algorithms, scenarios and files. Failed runs return a nonzero exit status and are
+removed from that scenario's manifest entries. The exporter runs each solver
+once, requests `--trace` for `python -m dispatch` commands, and retains legacy
+text replay for all other commands. The default process timeout is 20 seconds.
+The app remains a playback frontend; Python/HiGHS run during trace generation.
 
 ## What you can do
 
@@ -90,6 +123,12 @@ Rules:
    can't express, like `reposition` (moving to a standby point) or `idle` away from base.
 3. *(Optional)* give it a name, description and colour in `src/algorithms/registry.ts`. Unknown ids
    work without an entry.
+
+For the hybrid scheduler, use `dispatch/trace.py` and `--trace` rather than text
+replay: legacy output cannot unambiguously identify duplicate calls and staging
+movements. Native paths end at their actual traversed endpoint, so a redirected
+vehicle does not jump to its former target. Default traces include the physical
+initial staging at minute zero; use `--start-time` to configure a different start.
 
 ## Extending the frontend
 

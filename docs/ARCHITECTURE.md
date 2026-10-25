@@ -2,6 +2,35 @@
 
 ## Existing project and integration
 
+The original inspection below describes the branch's starting point. The branch
+has since been rebased onto mainline `99ac8cc`, retaining its four `solver/`
+algorithms and React visualizer. `dispatch/trace.py` now adapts completed hybrid
+simulations to the existing `uvec.trace/v1` contract. The native adapter carries
+exact call IDs and traversed x-then-y paths, including interrupted repositioning.
+`python -m dispatch ... --trace path.json` emits the trace while preserving text
+stdout and the existing diagnostic report. The independent checker validates the
+schedule before export. `tools/export_viz.py` requests this native file from
+dispatch subprocesses and keeps text replay for mainline solver commands.
+
+The visualizer's existing sampling engine, views, and overlays consume these
+segments without a new simulation engine or backend service. Its algorithm
+registry names the hybrid variants and its comparison panel tracks process
+runtime separately. Trace regeneration is incremental and a failed run is not
+advertised in the manifest. Optional native diagnostics retain the map history
+and per-replan algorithm, status, proof flags, gap, fallback reason and runtime.
+
+Integration verification on the rebased branch: 330 pytest tests and 88 Node
+playback tests passed. The exporter produced 87 valid native traces across all
+29 mainline scenarios (three dispatch variants); the existing 116 mainline
+traces were retained. Maximum measured process runtime was 16.18 seconds, with
+zero fallback plans. These runs include mainline's new `input_abdullah` scenario,
+so their aggregate scores are not directly comparable to the historical
+28-scenario benchmark snapshots. The frontend production build passes; lint
+continues to report warnings in unchanged mainline components. Browser checks
+covered Strategy 4 selection, initial staging, metrics, timeline completion and
+the 3D view. Playback tests use Node's built-in test runner, without an additional
+test framework dependency.
+
 Inspection found a Python 3.10+ test bench, not an existing dispatch algorithm.
 There was no AGENTS.md, solver, build process, or runtime dependency manifest.
 `pyproject.toml` configures pytest. `tester/inputs.py` parses competition input
@@ -31,6 +60,7 @@ Components and dependency direction:
 | `dispatch/simulation.py` | Event heap, commitments, replanning, actual movement and output records |
 | `dispatch/validation.py` | Independent plan and physical-history checks, active under python -O |
 | `dispatch/__main__.py` | Existing input interface, CLI options, text output and optional JSON |
+| `dispatch/trace.py` | Exact simulation history adapted to the mainline frontend trace contract |
 | `tester/checker.py` | Existing external replay, extended for opt-in staging and duplicate durations |
 | `tools/benchmark_dispatch.py` | Diagnostic collection using existing bench.run_one and summarize |
 
