@@ -1,5 +1,5 @@
 import { themeColor } from '@/lib/theme'
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from 'react'
 import { Ambulance, Check, HeartPulse, Hospital, Map as MapIcon, Siren } from 'lucide-react'
 import { OVERLAYS } from '@/overlays/registry'
 import type { Map2DContext } from '@/overlays/types'
@@ -8,6 +8,7 @@ import { formatClock, formatMinutes } from '@/playback/clock'
 import type { Bounds, CallFrame, VehicleFrame } from '@/engine/sample'
 import { useSize } from './useSize'
 import type { ViewPlugin, ViewProps } from './types'
+import { animateCamera } from './cameraMotion'
 
 const sy = (y: number) => -y
 
@@ -77,14 +78,13 @@ function cityGeometry({ x0, x1, y0, y1 }: Range, detail: boolean) {
 /** The part of the grid on screen, snapped outward to 8-block chunks so panning rarely rebuilds geometry. */
 function visibleRange(vb: number[], bounds: Bounds): Range {
   const snap = 8
-  const pad = 40 // never draw more than this far past the service area
   const lo = (v: number) => Math.floor(v / snap) * snap
   const hi = (v: number) => Math.ceil(v / snap) * snap
   return {
-    x0: Math.max(lo(vb[0]) - 1, bounds.minX - pad),
-    x1: Math.min(hi(vb[0] + vb[2]) + 1, bounds.maxX + pad),
-    y0: Math.max(lo(-(vb[1] + vb[3])) - 1, bounds.minY - pad),
-    y1: Math.min(hi(-vb[1]) + 1, bounds.maxY + pad),
+    x0: Math.max(lo(vb[0]) - 1, bounds.minX),
+    x1: Math.min(hi(vb[0] + vb[2]) + 1, bounds.maxX),
+    y0: Math.max(lo(-(vb[1] + vb[3])) - 1, bounds.minY),
+    y1: Math.min(hi(-vb[1]) + 1, bounds.maxY),
   }
 }
 
@@ -109,6 +109,13 @@ function CityCanvas({ bounds, vb, width, height }: { bounds: Bounds; vb: number[
     canvas.height = Math.round(height * dpr)
     g.setTransform(dpr * scale, 0, 0, dpr * scale, -vx * scale * dpr, -vy * scale * dpr)
     const px = 1 / scale
+    const { minX, maxX, minY, maxY } = bounds
+    g.fillStyle = themeColor('map-paper')
+    g.fillRect(vx, vy, width * px, height * px)
+    g.save()
+    g.beginPath()
+    g.rect(minX, sy(maxY), maxX - minX, maxY - minY)
+    g.clip()
     const rects = (list: Rects, radius: number) => {
       g.beginPath()
       for (let i = 0; i < list.length; i += 4) g.roundRect(list[i], list[i + 1], list[i + 2] - list[i], list[i + 3] - list[i + 1], radius)
@@ -148,14 +155,8 @@ function CityCanvas({ bounds, vb, width, height }: { bounds: Bounds; vb: number[
     g.moveTo(0, sy(r.y0)); g.lineTo(0, sy(r.y1))
     g.stroke()
 
-    // Everything outside the service area is the same city, washed out.
-    const { minX, maxX, minY, maxY } = bounds
-    g.beginPath()
-    g.rect(vx, vy, width * px, height * px)
-    g.rect(minX, sy(maxY), maxX - minX, maxY - minY)
-    g.globalAlpha = 0.55
-    g.fillStyle = themeColor('map-road')
-    g.fill('evenodd')
+    // The city exists only inside the square revealed by reports so far.
+    g.restore()
     g.globalAlpha = 0.5
     g.strokeStyle = themeColor('map-axis')
     g.lineWidth = px
@@ -279,38 +280,59 @@ function VehicleMarker({ v, px }: { v: VehicleFrame; px: number }) {
 function TopDown({ prepared, frame, overlays }: ViewProps) {
   const ref = useRef<HTMLDivElement>(null)
   const { width, height } = useSize(ref)
-  const { minX, maxX, minY, maxY } = prepared.bounds
-  const [view, setView] = useState({ zoom: 1, cx: (minX + maxX) / 2, cy: sy((minY + maxY) / 2) })
+  const { minX, maxX, minY, maxY } = frame.bounds
+  const [view, setView] = useState({ scale: 1, cx: 0, cy: 0 })
+  const currentView = useRef(view)
+  const hasFitted = useRef(false)
+  const cancelTransition = useRef<() => void>(() => {})
+  const updateView = useCallback((next: typeof view) => {
+    currentView.current = next
+    setView(next)
+  }, [])
   const drag = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null)
-
-  useEffect(() => {
-    setView({ zoom: 1, cx: (minX + maxX) / 2, cy: sy((minY + maxY) / 2) })
-  }, [minX, maxX, minY, maxY])
 
   // Screen space covered by floating controls (demo mode) or the guidance line, kept clear when fitting.
   const demo = ref.current?.closest('.is-demo') != null
   const inset = demo ? { top: 84, bottom: 200 } : { top: 16, bottom: 40 }
-  const fit = Math.min(width / (maxX - minX + 2), (height - inset.top - inset.bottom) / (maxY - minY + 2)) || 1
-  const scale = fit * view.zoom
+  const fit = Math.max(0.01, Math.min(width / (maxX - minX + 2), Math.max(1, height - inset.top - inset.bottom) / (maxY - minY + 2)))
+  useLayoutEffect(() => {
+    if (width <= 0 || height <= 0) return
+    const target = { scale: fit, cx: (minX + maxX) / 2, cy: sy((minY + maxY) / 2) }
+    cancelTransition.current()
+    if (!hasFitted.current) {
+      hasFitted.current = true
+      updateView(target)
+    } else {
+      const previous = currentView.current
+      cancelTransition.current = animateCamera(
+        [previous.scale, previous.cx, previous.cy], [target.scale, target.cx, target.cy],
+        ([scale, cx, cy]) => updateView({ scale, cx, cy }),
+      )
+    }
+    return () => cancelTransition.current()
+  }, [fit, minX, maxX, minY, maxY, width, height, updateView])
+  const scale = view.scale
   const px = 1 / scale
   const shift = (inset.bottom - inset.top) / 2 / scale
   const vb = [view.cx - width / 2 / scale, view.cy - height / 2 / scale + shift, width / scale, height / scale]
 
   const onWheel = (e: WheelEvent) => {
+    cancelTransition.current()
     const rect = ref.current!.getBoundingClientRect()
     const wx = vb[0] + (e.clientX - rect.left) / scale
     const wy = vb[1] + (e.clientY - rect.top) / scale
-    const zoom = Math.min(40, Math.max(0.3, view.zoom * Math.exp(-e.deltaY * 0.0015)))
-    const k = view.zoom / zoom
-    setView({ zoom, cx: wx + (view.cx - wx) * k, cy: wy + (view.cy - wy) * k })
+    const nextScale = fit * Math.min(40, Math.max(0.3, scale / fit * Math.exp(-e.deltaY * 0.0015)))
+    const ratio = scale / nextScale
+    updateView({ scale: nextScale, cx: wx + (view.cx - wx) * ratio, cy: wy + (view.cy - wy) * ratio })
   }
   const onDown = (e: PointerEvent) => {
+    cancelTransition.current()
     ;(e.target as Element).setPointerCapture(e.pointerId)
     drag.current = { x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy }
   }
   const onMove = (e: PointerEvent) => {
     const d = drag.current
-    if (d) setView((v) => ({ ...v, cx: d.cx - (e.clientX - d.x) / scale, cy: d.cy - (e.clientY - d.y) / scale }))
+    if (d) updateView({ scale, cx: d.cx - (e.clientX - d.x) / scale, cy: d.cy - (e.clientY - d.y) / scale })
   }
 
   const ctx: Map2DContext = { prepared, frame, sy, px }
@@ -319,8 +341,11 @@ function TopDown({ prepared, frame, overlays }: ViewProps) {
   return (
     <div ref={ref} className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
       onWheel={onWheel} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={() => (drag.current = null)}
-      onDoubleClick={() => setView({ zoom: 1, cx: (minX + maxX) / 2, cy: sy((minY + maxY) / 2) })}>
-      {width > 0 && <CityCanvas bounds={prepared.bounds} vb={vb} width={width} height={height} />}
+      onDoubleClick={() => {
+        cancelTransition.current()
+        updateView({ scale: fit, cx: (minX + maxX) / 2, cy: sy((minY + maxY) / 2) })
+      }}>
+      {width > 0 && <CityCanvas bounds={frame.bounds} vb={vb} width={width} height={height} />}
       {width > 0 && (
         <svg role="img" aria-label="City grid showing emergency calls, base, and vehicle positions" width={width} height={height} viewBox={vb.join(' ')} className="relative block select-none">
           {active.filter((o) => o.under).map((o) => <g key={o.id}>{o.render.map2d!(ctx)}</g>)}
@@ -338,6 +363,7 @@ function TopDown({ prepared, frame, overlays }: ViewProps) {
       )}
       <div className="map-guidance">
         <span><kbd>Scroll</kbd> Zoom <kbd>Drag</kbd> Pan <kbd>Double-click</kbd> Reset</span>
+        <span aria-label="Known city size">{maxX - minX} × {maxY - minY} blocks</span>
         <span>1 block = 1 minute <strong>North ↑</strong></span>
       </div>
     </div>

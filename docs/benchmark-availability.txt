@@ -1,0 +1,4 @@
+solver         valid  expected  avg_resp  max_resp  avg_delay  drive_min  veh_used  wins  secs
+-----------------------------------------------------------------------------------------------
+strategy4      4/4    0/1       139.09    638       117.43     1879       11        3     24.83
+greedy-staged  4/4    0/1       216.59    717       194.93     2435       11        2     3.44

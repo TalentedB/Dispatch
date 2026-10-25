@@ -19,7 +19,7 @@ runtime separately. Trace regeneration is incremental and a failed run is not
 advertised in the manifest. Optional native diagnostics retain the map history
 and per-replan algorithm, status, proof flags, gap, fallback reason and runtime.
 
-Integration verification on the rebased branch: 330 pytest tests and 88 Node
+Verification at frontend integration commit `3ed8119`: 330 pytest tests and 88 Node
 playback tests passed. The exporter produced 87 valid native traces across all
 29 mainline scenarios (three dispatch variants); the existing 116 mainline
 traces were retained. Maximum measured process runtime was 16.18 seconds, with
@@ -81,7 +81,7 @@ pyproject.toml. Black is optional development tooling, not a runtime dependency.
 Start at simulate(), which delegates to the private _Simulation.run() event loop.
 Named _SimulationEvent and _DispatchDecision records make ordering and replan
 triggers explicit. Separate methods handle reports, locked dispatch, arrival,
-service completion, coverage and final return. _ComputationBudget owns runtime
+service completion, coverage and legacy base returns. _ComputationBudget owns runtime
 accounting and names the existing policy constants; no scheduling policy changed.
 
 planning.optimize() chooses the validated starting plan and DP/MILP strategy.
@@ -315,7 +315,10 @@ are coalesced and an empty resting fleet needs no coverage solve.
 
 After completing a job, the vehicle can immediately chain another. If no work
 is assigned, Strategy 4 makes it available for dynamic coverage. `--no-staging`
-returns it to base instead. End-of-input cleanup still returns every vehicle.
+returns it to base instead. Strategy 4 keeps resting vehicles at coverage-selected
+locations after the final known job; it has no mandatory end-of-input return.
+The hospital may still be selected as a coverage location, especially when a
+single free vehicle covers a square centered on the origin.
 Output uses the existing combined
 one/two-axis Drive syntax, including zero-distance routes without a Drive line.
 The brief_small output is reproduced exactly with `--no-staging`. Duplicate same-place calls with
@@ -323,39 +326,101 @@ different durations are disambiguated by observed service duration in the
 external checker; the text format itself has no call IDs.
 
 Online mode supplies only reported pending calls to MILP. Event payloads contain
-future reports but are not exposed to decision functions. An explicit end-of-input
-signal at the last report permits final cleanup; before that signal, coverage
-decisions cannot use future demand. Offline mode exposes all calls at the start
+future reports but are not exposed to decision functions. There is no end-of-input
+notification to the dispatcher: the finite test run ends when its pending events
+have settled. Resting behavior before an unseen report is identical for a full
+input and the same known prefix. Offline mode exposes all calls at the start
 and during replans. It still forbids incident-directed departure before report;
 it can wait at the previous job for a future assigned call. Returning to base
-between such jobs is not mandatory. Both modes start at the hospital and finish
-there. JSON records absolute times; the competition text retains HH:MM rollover.
+between such jobs is not mandatory. Both modes start at the hospital; base-return
+deployment also finishes there. With `allow_reposition=True`, the checker accepts
+completed jobs and settled staging off base, but still rejects unfinished travel
+or service. The physical validator retains strict terminal-base checks for
+base-return deployment. JSON records absolute times; text retains HH:MM rollover.
+
+The incident planner's secondary travel estimate still includes a terminal
+base-distance proxy when comparing mutable routes; it does not issue a movement.
+Execution metrics report actual travel, including coverage relocation. Coverage
+and incident routes remain separately optimized, without a full-day optimality claim.
+
+The removal of forced terminal returns passed 336 Python tests and 94 frontend
+tests. All 29 refreshed Strategy 4 traces are valid and contain zero `to_base`
+segments. Maximum observed process runtime was 17.02 seconds. Four budget-limited
+decisions reused validated retained plans (three run-budget limits and one DP
+allowance limit); none used a greedy fallback. The frontend now initially selects
+Strategy 4 when present, with base-return algorithms available for comparison.
 
 ## Adaptive coverage grid planner
 
-Coverage no longer invokes HiGHS. It starts with the configured inclusive map
-bounds (default 0..9 on each axis), and expands them only when a report event
-reveals an out-of-bounds emergency. The map never contracts. Even offline
+Coverage no longer invokes HiGHS. The city is a square centered on `(0,0)` with
+radius `R = max(initial radius, abs(x), abs(y))` over reported calls only. Its
+bounds are `(-R,R,-R,R)` and its side length is `2R` blocks. The default radius
+is 5: 10 × 10 blocks, with 121 grid intersections including the boundary. Custom
+initial bounds are enclosed in a centered square before simulation begins.
+A report at `(7,0)` expands a default city to 14 × 14 blocks. The map never
+contracts during forward execution. Even offline
 incident scheduling cannot expose future locations to coverage. The report's
 map_history records every expansion time and bounds. Coverage records its own
 time, bounds, area shares, runtime, and search status.
 
-At a fleet membership or map change, consider only vehicles without a locked
-emergency or queued incident work. Compute Manhattan distance from each demand
-intersection to its nearest resting target. Minimize worst nearest travel time
-(center), or mean nearest travel time (median), plus relocation_weight times
+The frontend previously fitted its camera and grid to every call and movement
+endpoint in a completed trace. Playback now builds a time-indexed history from
+reported call times, seeded only by the native trace's configured initial extent
+(or radius 5 for legacy traces). `sampleFrame` selects the extent at the sampled
+time. Top-down, 3D terrain/camera, and the heatmap all use `frame.bounds`.
+Scrubbing backwards restores an earlier square; future calls and future travel
+endpoints cannot enlarge it. The top-down city is clipped to that square and the
+map shows its current side length in blocks. This changes coverage/deployment
+results, so earlier benchmark snapshots describe the prior rectangle policy.
+
+The centered-square correction passed 333 Python tests and 90 playback tests,
+including `(7,0)` producing a 14 × 14 city only at its report time, negative
+coordinates, simultaneous reports, configured initial extents, native map-history
+agreement and rewind behavior. All 87 native traces were regenerated and valid;
+the maximum observed process runtime was 16.09 seconds with no fallback plans.
+Browser playback confirmed the first report expands the grid and camera, and
+rewinding restores the initial extent. Build passes; the existing frontend lint
+warnings remain.
+
+Only vehicles without locked work or queued incidents are movable coverage
+decisions. Other vehicles remain fixed readiness anchors. For an intersection
+q and time t, estimated response is the minimum of `Manhattan(target[v],q)` for
+movable vehicles and `max(0,available[v]-t)+Manhattan(ready_location[v],q)` for busy
+anchors. Ready locations/times include the current locked job and currently
+reported queued jobs; unreported queue locations are excluded, even offline.
+This is additive Manhattan distance in `(X,Y,Z)` where Z is busy minutes, not
+Euclidean geometry. Minimize worst estimated response (center), or mean response
+(median), plus relocation_weight times
 actual remaining relocation travel and deployment_weight times vehicles moved.
 Compare with continuing existing targets; move only when the score improvement
-exceeds min_improvement. Cooldown coalesces rapid changes. Actual physical
+exceeds min_improvement. Cooldown coalesces rapid fleet/map changes. Timed checks
+refresh availability at most every `availability_interval` simulation minutes
+(default 10), halving the remaining gap down to one minute near the next readiness
+time. Those planned availability checks can bypass the membership cooldown, but
+still require the configured objective improvement to move. Obsolete wakeups are
+ignored; no refresh loop remains once all vehicles are free. Coverage retains
+its shared computation allowance and holds targets when that allowance is exhausted.
+Actual physical
 positions are evaluated at the decision time. Repositioning remains interruptible;
 accepted emergency travel and service remain locked. All vehicles start at base
-and physically drive to their targets. End-of-stream cleanup returns them to base.
+and physically drive to their targets. They continue resting at coverage targets
+after the last known job; ending a test file does not trigger a return to base.
 
-Area share means the percentage of demand intersections nearest to each vehicle's
-chosen target. Equal-distance ties split equally, so shares sum to 100 percent.
+Area share means the percentage of demand intersections for which each vehicle
+has the best predicted response, including busy-time penalties. Busy anchors
+and free targets both have shares. Equal-response ties split equally, so shares
+sum to 100 percent.
 It is a distribution diagnostic, not the fraction reachable within a response
 threshold, and equal shares alone are not the optimization objective. These
 metrics describe eventual targets, not coverage during relocation.
+
+The native trace records readiness snapshots when assignments/known queues change.
+The playback sampler uses only snapshots at or before the selected time, subtracts
+elapsed time from availability, and preserves current-job ETAs separately. The 3D
+terrain and heatmap use the same additive response metric, including known queues
+when native snapshots exist. Legacy imported traces fall back to the current
+locked job's completion time because they contain no queue-plan history. Busy
+vehicles remain physically locked; rendering readiness never changes their route.
 
 For very small problems, enumerate candidate-site multisets and match vehicles
 using the Hungarian algorithm (O(fleet^3)) to minimize weighted relocation cost.

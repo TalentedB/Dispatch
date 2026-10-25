@@ -27,7 +27,7 @@ def main():
     ap.add_argument("--workers", type=int, default=1,
                     help="independent solver subprocesses (default: 1)")
     ap.add_argument("--variants", default="greedy,milp,strategy4")
-    ap.add_argument("--bounds", nargs=4, type=int, default=(0, 9, 0, 9))
+    ap.add_argument("--bounds", nargs=4, type=int, default=CoverageConfig().bounds)
     args = ap.parse_args()
     if args.workers < 1:
         ap.error("workers must be positive")

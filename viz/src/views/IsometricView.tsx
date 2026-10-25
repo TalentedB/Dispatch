@@ -4,26 +4,25 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { Box } from 'lucide-react'
-import type { XY } from '@/contract/trace'
-import { nearestDistance, type CallFrame, type Prepared, type VehicleFrame } from '@/engine/sample'
+import { nearestResponseTime, type CallFrame, type Bounds, type VehicleFrame } from '@/engine/sample'
 import { CALL_STATUS, VEHICLE_STATUS } from '@/engine/status'
 import { Line3D } from '@/overlays/shared'
 import { OVERLAYS } from '@/overlays/registry'
 import type { Map3DContext } from '@/overlays/types'
 import { distanceColor } from './colors'
 import type { ViewPlugin, ViewProps } from './types'
+import { animateCamera } from './cameraMotion'
 
 type Field = 'all' | 'free' | 'flat'
 
-/** Height function for the terrain: drive time from each point to the nearest (free) vehicle. */
-function useField(prepared: Prepared, vehicles: VehicleFrame[], field: Field) {
-  const { minX, maxX, minY, maxY } = prepared.bounds
+/** Height is response minutes: remaining locked work plus travel from the ready location. */
+function useField(bounds: Bounds, vehicles: VehicleFrame[], field: Field) {
+  const { minX, maxX, minY, maxY } = bounds
   const range = Math.max(8, (maxX - minX + maxY - minY) / 2)
   const k = 9 / range
-  const sources: XY[] = vehicles
-    .filter((v) => field === 'all' || v.status === 'idle' || v.status === 'to_base')
-    .map((v) => [v.x, v.y])
-  const distAt = (x: number, y: number) => (sources.length ? Math.min(range, nearestDistance(x, y, sources)) : range)
+  const sources = vehicles.filter((vehicle) => field === 'all'
+    || vehicle.status === 'idle' || vehicle.status === 'to_base' || vehicle.status === 'reposition')
+  const distAt = (x: number, y: number) => Math.min(range, nearestResponseTime(x, y, sources))
   const heightAt = (x: number, y: number) => (field === 'flat' ? 0 : distAt(x, y) * k)
   return { distAt, heightAt, range, k }
 }
@@ -43,10 +42,10 @@ function gridTexture() {
   return t
 }
 
-function Terrain({ prepared, distAt, heightAt, range }: {
-  prepared: Prepared; distAt: (x: number, y: number) => number; heightAt: (x: number, y: number) => number; range: number
+function Terrain({ bounds, distAt, heightAt, range }: {
+  bounds: Bounds; distAt: (x: number, y: number) => number; heightAt: (x: number, y: number) => number; range: number
 }) {
-  const { minX, maxX, minY, maxY } = prepared.bounds
+  const { minX, maxX, minY, maxY } = bounds
   const W = maxX - minX
   const H = maxY - minY
   const geom = useMemo(() => {
@@ -145,26 +144,46 @@ function Vehicle({ v, heightAt }: { v: VehicleFrame; heightAt: (x: number, y: nu
   )
 }
 
-function FitCamera({ prepared }: { prepared: Prepared }) {
-  const { camera, size } = useThree()
-  const { minX, maxX, minY, maxY } = prepared.bounds
+function FitCamera({ bounds }: { bounds: Bounds }) {
+  const { get, size, gl } = useThree()
+  const hasFitted = useRef(false)
+  const { minX, maxX, minY, maxY } = bounds
   useLayoutEffect(() => {
+    const camera = get().camera
     const span = Math.max(maxX - minX, maxY - minY)
     const cx = (minX + maxX) / 2
     const cz = -(minY + maxY) / 2
-    camera.position.set(cx + span, span * 0.95, cz + span)
-    camera.lookAt(cx, 2, cz)
-    camera.zoom = Math.min(size.width, size.height) / (span * 1.55)
-    camera.updateProjectionMatrix()
-    // Only refit when the scenario changes, so user zoom/rotation survives playback.
-  }, [minX, maxX, minY, maxY])
+    const target = [cx + span, span * 0.95, cz + span, Math.min(size.width, size.height) / (Math.max(1, span) * 1.55)]
+    const update = ([x, y, z, zoom]: number[]) => {
+      camera.position.set(x, y, z)
+      camera.lookAt(cx, 2, cz)
+      camera.zoom = zoom
+      camera.updateProjectionMatrix()
+    }
+    let cancel = () => {}
+    if (!hasFitted.current) {
+      hasFitted.current = true
+      update(target)
+    } else {
+      cancel = animateCamera([...camera.position.toArray(), camera.zoom], target, update)
+    }
+    // User input takes ownership before OrbitControls handles the same event.
+    gl.domElement.addEventListener('pointerdown', cancel, true)
+    gl.domElement.addEventListener('wheel', cancel, true)
+    return () => {
+      cancel()
+      gl.domElement.removeEventListener('pointerdown', cancel, true)
+      gl.domElement.removeEventListener('wheel', cancel, true)
+    }
+  }, [minX, maxX, minY, maxY, get, gl, size.width, size.height])
   return null
 }
 
 function Isometric({ prepared, frame, overlays, options }: ViewProps) {
+  const bounds = frame.bounds
   const field = (options.surface ?? 'all') as Field
-  const { distAt, heightAt, range, k } = useField(prepared, frame.vehicles, field)
-  const { minX, maxX, minY, maxY } = prepared.bounds
+  const { distAt, heightAt, range, k } = useField(frame.bounds, frame.vehicles, field)
+  const { minX, maxX, minY, maxY } = bounds
   const ctx: Map3DContext = { prepared, frame, heightAt }
   const active = OVERLAYS.filter((o) => overlays.has(o.id) && o.render.map3d)
 
@@ -173,11 +192,11 @@ function Isometric({ prepared, frame, overlays, options }: ViewProps) {
       <Canvas orthographic dpr={[1, 2]} camera={{ near: -1000, far: 1000, position: [50, 50, 50] }}>
         <color attach="background" args={[themeColor('map-paper')]} />
         <fog attach="fog" args={[themeColor('map-paper'), 200, 400]} />
-        <FitCamera prepared={prepared} />
+        <FitCamera bounds={bounds} />
         <ambientLight intensity={0.55} />
         <hemisphereLight args={[themeColor('map-light'), themeColor('map-grid'), 0.5]} />
         <directionalLight position={[30, 60, 20]} intensity={1.6} />
-        <Terrain prepared={prepared} distAt={distAt} heightAt={heightAt} range={range} />
+        <Terrain bounds={bounds} distAt={distAt} heightAt={heightAt} range={range} />
         <group position={[0, heightAt(0, 0), 0]}>
           <mesh position={[0, 0.6, 0]}>
             <boxGeometry args={[1.4, 1.2, 1.4]} />
@@ -205,8 +224,9 @@ function Isometric({ prepared, frame, overlays, options }: ViewProps) {
         <OrbitControls makeDefault target={[(minX + maxX) / 2, 2, -(minY + maxY) / 2]} enableDamping maxPolarAngle={Math.PI / 2.1} />
       </Canvas>
       <div className="pointer-events-none absolute bottom-2 left-2 flex items-center gap-2 text-xs text-muted-foreground">
+        <span aria-label="Known city size">{maxX - minX} × {maxY - minY} blocks</span>
         {field !== 'flat' && (
-          <span className="flex items-center gap-1.5" title={`Terrain height and colour: drive time to the nearest ${field === 'free' ? 'free ' : ''}vehicle`}>
+          <span className="flex items-center gap-1.5" title={`Terrain height and colour: response time including remaining locked work${field === 'free' ? ' (free vehicles only)' : ''}`}>
             near <span className="h-1.5 w-16 rounded-full" style={{ background: 'var(--coverage-ramp)' }} /> far
           </span>
         )}
@@ -226,8 +246,8 @@ export const isometricView: ViewPlugin = {
       label: 'Terrain',
       default: 'all',
       choices: [
-        { value: 'all', label: 'Distance to nearest vehicle' },
-        { value: 'free', label: 'Distance to nearest free vehicle' },
+        { value: 'all', label: 'Response time including busy vehicles' },
+        { value: 'free', label: 'Response time, free vehicles only' },
         { value: 'flat', label: 'Flat' },
       ],
     },

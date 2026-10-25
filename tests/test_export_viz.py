@@ -84,7 +84,7 @@ def test_native_dispatch_trace_has_exact_calls_and_continuous_physical_paths(pat
                 assert all(a[0] == b[0] or a[1] == b[1]
                            for a, b in zip(segment["path"], segment["path"][1:]))
             previous_position, previous_end = segment["path"][-1], segment["end"]
-        assert previous_position == [0, 0]
+        assert not any(segment["kind"] == "to_base" for segment in vehicle["segments"])
     assert sorted(served) == sorted(result.emergencies)
     assert trace["metrics"]["avg_response"] == result.metrics()["average_response"]
     assert trace["metrics"]["total_drive"] == result.metrics()["total_travel"]

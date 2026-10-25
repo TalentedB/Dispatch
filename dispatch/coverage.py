@@ -11,6 +11,7 @@ from typing import NamedTuple, Sequence
 import numpy as np
 
 from tester.inputs import Point, manhattan
+from .model import Anchor
 
 Bounds = tuple[int, int, int, int]
 COVERAGE_COMPARISON_TOLERANCE = 1e-7
@@ -19,7 +20,7 @@ LOWER_BOUND_SAMPLE_SIZE = 32
 
 @dataclass(frozen=True)
 class CoverageConfig:
-    bounds: Bounds = (0, 9, 0, 9)
+    bounds: Bounds = (-5, 5, -5, 5)
     objective: str = "center"
     relocation_weight: float = 0.1
     deployment_weight: float = 0.05
@@ -31,6 +32,7 @@ class CoverageConfig:
     max_passes: int = 4
     enumeration_limit: int = 2000
     runtime_limit: float | None = None
+    availability_interval: int = 10
 
     def __post_init__(self) -> None:
         min_x, max_x, min_y, max_y = self.bounds
@@ -42,12 +44,14 @@ class CoverageConfig:
             self.min_improvement,
             self.cooldown,
             self.time_limit,
+            self.availability_interval,
         )
         if any(not isfinite(value) or value < 0 for value in costs_and_limits):
             raise ValueError("coverage costs and limits must be finite and nonnegative")
         if (
             min(self.max_candidates, self.max_demand_points, self.max_passes) < 1
             or self.enumeration_limit < 0
+            or self.availability_interval < 1
         ):
             raise ValueError("invalid coverage work limits")
         if self.runtime_limit is not None and (
@@ -76,6 +80,7 @@ class CoveragePlan:
     sampled: bool = False
     demand_points: int = 0
     candidate_count: int = 0
+    busy_anchors: list[Anchor] = field(default_factory=list)
 
 
 class _CoverageScore(NamedTuple):
@@ -91,8 +96,10 @@ class _CoverageScore(NamedTuple):
 
 
 def expanded_bounds(bounds: Bounds, point: Point) -> Bounds:
-    min_x, max_x, min_y, max_y = bounds
-    return min(min_x, point.x), max(max_x, point.x), min(min_y, point.y), max(max_y, point.y)
+    """Grow a square centered on base; its side length is twice the known radius."""
+    known_radius = max(abs(boundary) for boundary in bounds)
+    radius = max(known_radius, abs(point.x), abs(point.y))
+    return -radius, radius, -radius, radius
 
 
 def coverage_metrics(points: list[Point], sites: list[Point]) -> tuple[int, float]:
@@ -211,6 +218,8 @@ class _CoverageSearch:
         config: CoverageConfig,
         existing_targets: dict[int, Point] | None,
         started_at: float,
+        busy_anchors: list[Anchor],
+        now: int,
     ) -> None:
         self.config = config
         self.positions = positions
@@ -238,6 +247,21 @@ class _CoverageSearch:
         )
         self.distance_cache: dict[Point, np.ndarray] = {}
         self.candidate_distances = self.distances(self.candidate_targets)
+        self.busy_anchors = busy_anchors
+        self.busy_response_times = (
+            self.distances([anchor.position for anchor in busy_anchors])
+            + np.array([anchor.remaining(now) for anchor in busy_anchors])[:, None]
+            if busy_anchors
+            else np.empty((0, len(self.demand_points)))
+        )
+        self.nearest_busy_response = (
+            self.busy_response_times.min(axis=0)
+            if busy_anchors
+            else np.full(len(self.demand_points), np.inf)
+        )
+
+    def nearest_response_times(self, targets: list[Point]) -> np.ndarray:
+        return np.minimum(self.distances(targets).min(axis=0), self.nearest_busy_response)
 
     def deadline_expired(self) -> bool:
         return (
@@ -254,7 +278,7 @@ class _CoverageSearch:
         return np.stack([self.distance_cache[target] for target in targets])
 
     def score(self, targets: list[Point]) -> _CoverageScore:
-        nearest_distances = self.distances(targets).min(axis=0)
+        nearest_distances = self.nearest_response_times(targets)
         worst_travel = int(nearest_distances.max())
         average_travel = float(
             np.sum(nearest_distances * self.demand_weights) / self.demand_weights.sum()
@@ -288,7 +312,7 @@ class _CoverageSearch:
         min_x, max_x, min_y, max_y = self.config.bounds
         targets = [Point((min_x + max_x) // 2, (min_y + max_y) // 2)]
         for _ in range(1, len(self.vehicle_ids)):
-            nearest_distances = self.distances(targets).min(axis=0)
+            nearest_distances = self.nearest_response_times(targets)
             farthest_point = self.demand_points[int(np.argmax(nearest_distances))]
             targets.append(
                 min(
@@ -328,6 +352,7 @@ class _CoverageSearch:
             if other_targets
             else np.full(len(self.demand_points), np.iinfo(np.int64).max)
         )
+        nearest_other_vehicle = np.minimum(nearest_other_vehicle, self.nearest_busy_response)
         relocation_distances = np.array(
             [manhattan(self.positions[vehicle_id], point) for point in self.candidate_targets]
         )
@@ -442,7 +467,7 @@ class _CoverageSearch:
         return best_targets, best_score, status
 
     def area_shares(self, targets: list[Point]) -> dict[int, float]:
-        distances = self.distances(targets)
+        distances = np.vstack((self.distances(targets), self.busy_response_times))
         nearest_vehicle_ties = distances == distances.min(axis=0)
         shared_weights = (
             nearest_vehicle_ties / nearest_vehicle_ties.sum(axis=0) * self.demand_weights
@@ -450,7 +475,9 @@ class _CoverageSearch:
         percentages = np.sum(shared_weights, axis=1) / self.demand_weights.sum() * 100
         return {
             vehicle_id: float(percentage)
-            for vehicle_id, percentage in zip(self.vehicle_ids, percentages)
+            for vehicle_id, percentage in zip(
+                self.vehicle_ids + [anchor.vehicle for anchor in self.busy_anchors], percentages
+            )
         }
 
 
@@ -458,11 +485,18 @@ def plan_coverage(
     positions: dict[int, Point],
     config: CoverageConfig = CoverageConfig(),
     existing_targets: dict[int, Point] | None = None,
+    *,
+    busy_anchors: list[Anchor] | None = None,
+    now: int = 0,
 ) -> CoveragePlan:
     started_at = perf_counter()
     if not positions:
         return CoveragePlan({}, 0, 0, 0, "EMPTY", bounds=config.bounds)
-    search = _CoverageSearch(positions, config, existing_targets, started_at)
+    busy_anchors = busy_anchors or []
+    all_vehicle_ids = list(positions) + [anchor.vehicle for anchor in busy_anchors]
+    if len(set(all_vehicle_ids)) != len(all_vehicle_ids):
+        raise ValueError("free vehicles and busy anchors must have distinct unique identifiers")
+    search = _CoverageSearch(positions, config, existing_targets, started_at, busy_anchors, now)
     current_score = search.score(search.current_targets)
     candidate_targets, candidate_score, status = search.search(current_score)
     improved = (
@@ -493,4 +527,5 @@ def plan_coverage(
         sampled=len(search.demand_points) < full_grid_size,
         demand_points=len(search.demand_points),
         candidate_count=len(search.candidate_targets),
+        busy_anchors=list(busy_anchors),
     )

@@ -62,7 +62,7 @@ def main():
         "--bounds",
         nargs=4,
         type=int,
-        default=(0, 9, 0, 9),
+        default=CoverageConfig().bounds,
         metavar=("XMIN", "XMAX", "YMIN", "YMAX"),
     )
     argument_parser.add_argument(
@@ -77,6 +77,12 @@ def main():
         help="legacy option: zero disables coverage planning; positive values do not limit grid search",
     )
     argument_parser.add_argument("--coverage-cooldown", type=int, default=10)
+    argument_parser.add_argument(
+        "--coverage-availability-interval",
+        type=int,
+        default=CoverageConfig().availability_interval,
+        help="simulation minutes between busy-availability coverage refreshes (default: 10)",
+    )
     argument_parser.add_argument("--min-coverage-improvement", type=float, default=0.5)
     argument_parser.add_argument(
         "--start-time", type=int, default=0, help="absolute minutes; staging begins here"
@@ -107,6 +113,7 @@ def main():
             deployment_weight=args.deployment_weight,
             min_improvement=args.min_coverage_improvement,
             cooldown=args.coverage_cooldown,
+            availability_interval=args.coverage_availability_interval,
             time_limit=args.coverage_time_limit,
         ),
         start_time=args.start_time,

@@ -366,6 +366,10 @@ def check(num_vehicles: int, calls: list[Call], output: str, *, allow_reposition
             "to_staging": "never finishes staging or returns to base",
             "staging": "never returns to base from staging",
         }.get(v.mode)
+        if allow_reposition and v.mode in ("done_at_job", "staging"):
+            # Coverage mode may end with free vehicles resting off base. An
+            # unfinished drive or service is still invalid in every mode.
+            problem = None
         if problem:
             errors.append(f"vehicle {vid}: {problem}")
 

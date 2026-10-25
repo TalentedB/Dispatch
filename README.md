@@ -80,6 +80,10 @@ Strategy 4 is the application default for dispatch and deployment. Vehicles
 originate at `(0,0)` at simulation minute zero, physically drive to coverage
 positions, lock accepted jobs, chain queued work, and dynamically reposition
 when resting. Use `--no-staging` for legacy base deployment and idle returns.
+Strategy 4 also rebalances after the final known job and leaves vehicles at
+coverage-selected resting locations. Ending the input does not send them home.
+The hospital is a valid resting site when coverage selects it, especially for
+one free vehicle covering the centered square.
 Offline mode knows future calls,
 but still waits until each report before departing toward that call; it may
 wait at a previous incident instead of returning between future assigned jobs.
@@ -121,16 +125,30 @@ python -m tools.benchmark_dispatch --output .bench_out/metrics.json
 python -m tools.benchmark_dispatch --inputs "inputs/*.txt" "inputs/generated/*.txt" --variants greedy,milp,strategy4,greedy-staged --workers 4 --output .bench_out/strategy4-shipped.json
 ```
 
-Bounds describe the initially known staging/demand map; the default `(0,9,0,9)`
-is 100 intersections. Only reported calls expand those bounds, including negative
-coordinates. Future calls cannot resize the map, even in offline incident mode.
+The map is a square centered on the hospital. Default bounds `(-5,5,-5,5)`
+span 10 × 10 blocks (11 × 11 intersections, including both edges). Only reported
+calls expand it. A call at `(7,0)` changes both axes to `[-7,7]`: 14 × 14 blocks.
+The radius is the largest absolute known coordinate or configured initial extent,
+and never shrinks during a run. Custom `--bounds` are enclosed in that centered
+square. Future calls cannot resize the map, even in offline incident mode.
+The frontend uses the bounds at the current playback time, so scrubbing backwards
+restores the earlier map. Future route endpoints do not affect its camera or grid.
 Emergency coordinates are never clamped.
 Off-base staging is enabled for the requested Strategy 4. Select `--no-staging`
 when base deployment is required. Vehicles physically drive to sites starting at
 `--start-time` (default 0); calls can interrupt them en route.
 
-The adaptive grid planner balances worst nearest-vehicle travel time (or mean
-travel with median coverage) against relocation travel and movement count.
+The adaptive grid planner balances worst estimated response time (or mean
+response with median coverage) against relocation travel and movement count.
+All ambulances contribute: a busy vehicle contributes its remaining locked
+travel/service and known queue time plus Manhattan travel from its eventual
+ready location. Only free, unqueued vehicles receive relocation targets.
+Coverage refreshes while work is in progress, with a default maximum interval
+of 10 simulation minutes (`--coverage-availability-interval`), shortening the
+interval near readiness. Relocation improvement thresholds still prevent churn.
+Busy time is added in minutes; using a Euclidean Z-axis would undercount waiting
+and grid travel. A long-busy vehicle can still make the hospital the best spare
+location; a nearly available vehicle can shift the spare toward another area.
 It uses exact enumeration for tiny grids and deterministic placement improvements
 for larger ones, with cached distances and safe candidate pruning. The larger
 search has no global optimality claim. `--relocation-weight`,
@@ -138,7 +156,7 @@ search has no global optimality claim. `--relocation-weight`,
 control the tradeoff. The legacy `--coverage-time-limit` option accepts positive
 values for compatibility; zero disables coverage planning. All calls must occur
 at or after `--start-time`. JSON records map expansion history, planner status,
-nearest-target area percentages (ties shared equally), and whether demand was
+predicted nearest-response area percentages (ties shared equally), and whether demand was
 sampled on a large map. Percentages describe eventual targets, not current
 coverage while ambulances are moving.
 The dispatch coordinates `(X,Y,Z)` represent the location where a vehicle will
@@ -206,7 +224,7 @@ movement rules, objective bounds, failure handling, and limitations, and
   `Arrive at base` not exactly when the return drive ends
 - starting a new route while driving to or working another job (no switching)
 - skipping `Arrive at base` when a vehicle would already be home
-- calls never served, vehicles that never finish or never return to base
+- calls never served and vehicles that never finish; legacy mode also requires a final return to base
 
 It deliberately does **not** assume a strategy. Any valid choice passes, including
 which axis a vehicle drives first: a vehicle redirected on its way home may be

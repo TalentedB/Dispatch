@@ -68,6 +68,7 @@ class SimulationResult:
     reused_plans: int = 0
     map_history: list[dict] = field(default_factory=list)
     coverage_skipped_budget: int = 0
+    coverage_availability: list[dict] = field(default_factory=list)
 
     def metrics(self) -> dict:
         response_delays = [
@@ -178,7 +179,6 @@ class _ComputationBudget:
 class _EventKind(Enum):
     INITIALIZE = "initialize"
     EMERGENCY_REPORTED = "report"
-    REPORT_STREAM_FINISHED = "stream_end"
     COVERAGE_DUE = "coverage"
     DISPATCH_DUE = "wake"
     VEHICLE_ARRIVED = "arrive"
@@ -239,14 +239,16 @@ class _Simulation:
         self.event_sequence = itertools.count()
         self.current_time = config.start_time
         self.plan_revision = 0
-        self.report_stream_finished = not calls
         self.last_coverage_signature = None
         self.last_coverage_time = -(10**12)
         self.coverage_wakeup_time = None
+        self.availability_refresh_time: int | None = None
         self.reused_plan_count = 0
         self.skipped_coverage_count = 0
-        self.coverage_bounds = config.coverage.bounds
+        self.coverage_bounds = expanded_bounds(config.coverage.bounds, BASE)
         self.map_history = [{"time": self.current_time, "bounds": self.coverage_bounds}]
+        self.coverage_availability: list[dict] = []
+        self.last_availability_signature = None
 
     def schedule_event(
         self,
@@ -313,17 +315,57 @@ class _Simulation:
         idle_vehicles = [
             vehicle for vehicle in self.fleet if not vehicle.committed and not vehicle.queue
         ]
-        fleet_signature = tuple(vehicle.id for vehicle in idle_vehicles), self.coverage_bounds
+        idle_ids = {vehicle.id for vehicle in idle_vehicles}
+        busy_anchors = []
+        for anchor in self.availability_anchors():
+            if anchor.vehicle in idle_ids:
+                continue
+            available, position = max(self.current_time, anchor.available), anchor.position
+            for call_id in self.fleet[anchor.vehicle].queue:
+                call = self.emergencies[call_id].call
+                if call.time > self.current_time:
+                    break  # Unreported locations cannot inform coverage, even offline.
+                available = (
+                    max(available, call.time) + manhattan(position, call.location) + call.duration
+                )
+                position = call.location
+            busy_anchors.append(Anchor(anchor.vehicle, position, available))
+        fleet_signature = (
+            tuple(vehicle.id for vehicle in idle_vehicles),
+            self.coverage_bounds,
+            tuple(busy_anchors),
+        )
+        if fleet_signature != self.last_availability_signature:
+            self.last_availability_signature = fleet_signature
+            self.coverage_availability.append(
+                {
+                    "time": self.current_time,
+                    "busyAnchors": [
+                        {
+                            "vehicle": anchor.vehicle,
+                            "x": anchor.position.x,
+                            "y": anchor.position.y,
+                            "available": anchor.available,
+                        }
+                        for anchor in busy_anchors
+                    ],
+                }
+            )
         if not idle_vehicles:
             self.last_coverage_signature = fleet_signature
+            self.coverage_wakeup_time = None
+            self.availability_refresh_time = None
             return
-        if fleet_signature == self.last_coverage_signature:
+        availability_refresh_due = (
+            bool(busy_anchors)
+            and self.availability_refresh_time is not None
+            and self.current_time >= self.availability_refresh_time
+        )
+        if fleet_signature == self.last_coverage_signature and not availability_refresh_due:
             return
         earliest_rebalance = self.last_coverage_time + self.config.coverage.cooldown
-        if self.current_time < earliest_rebalance:
-            if self.coverage_wakeup_time != earliest_rebalance:
-                self.schedule_event(earliest_rebalance, _EventKind.COVERAGE_DUE)
-                self.coverage_wakeup_time = earliest_rebalance
+        if self.current_time < earliest_rebalance and not availability_refresh_due:
+            self.schedule_coverage_refresh(earliest_rebalance)
             return
         self.last_coverage_signature, self.last_coverage_time = fleet_signature, self.current_time
         allowance = self.budget.coverage_allowance()
@@ -346,7 +388,13 @@ class _Simulation:
             bounds=self.coverage_bounds,
             runtime_limit=None if math.isinf(allowance) else allowance,
         )
-        plan = plan_coverage(positions, coverage_config, current_targets)
+        plan = plan_coverage(
+            positions,
+            coverage_config,
+            current_targets,
+            busy_anchors=busy_anchors,
+            now=self.current_time,
+        )
         plan.time = self.current_time
         self.coverage_plans.append(plan)
         self.budget.coverage_seconds += plan.seconds
@@ -357,6 +405,30 @@ class _Simulation:
                     continue
                 if vehicle.position_at(self.current_time) != destination or vehicle.movement:
                     self.start_movement(vehicle, destination, Status.REPOSITIONING)
+        if busy_anchors and self.config.coverage.time_limit > 0:
+            refresh_interval = self.config.coverage.availability_interval
+            next_free_time = min(
+                (
+                    anchor.available
+                    for anchor in busy_anchors
+                    if anchor.available > self.current_time
+                ),
+                default=self.current_time + refresh_interval,
+            )
+            # Check more closely near readiness, when a small Z reduction can
+            # change the best target. Relocation hysteresis still applies.
+            remaining = max(1, next_free_time - self.current_time)
+            refresh_interval = min(refresh_interval, max(1, remaining // 2))
+            self.availability_refresh_time = self.current_time + refresh_interval
+            self.schedule_coverage_refresh(self.availability_refresh_time)
+        else:
+            self.coverage_wakeup_time = None
+            self.availability_refresh_time = None
+
+    def schedule_coverage_refresh(self, time: int) -> None:
+        if self.coverage_wakeup_time is None or time < self.coverage_wakeup_time:
+            self.coverage_wakeup_time = time
+            self.schedule_event(time, _EventKind.COVERAGE_DUE)
 
     def availability_anchors(self) -> list[Anchor]:
         return [
@@ -436,7 +508,7 @@ class _Simulation:
             # Even service at base needs the output format's zero-length return.
             self.start_movement(vehicle, BASE, Status.RETURNING_TO_BASE)
 
-    def apply_plan(self, plan: Plan, pending_calls: list[Call]) -> None:
+    def apply_plan(self, plan: Plan) -> None:
         for vehicle in self.fleet:
             route = plan.routes[vehicle.id]
             vehicle.queue = [job.call for job in route]
@@ -454,11 +526,7 @@ class _Simulation:
                     self.schedule_event(
                         first_job.departure, _EventKind.DISPATCH_DUE, generation=self.plan_revision
                     )
-            elif not self.config.staging or (
-                self.report_stream_finished
-                and not pending_calls
-                and all(not other.committed for other in self.fleet)
-            ):
+            elif not self.config.staging:
                 self.return_to_base(vehicle)
             elif vehicle.movement is None:
                 vehicle.status = Status.IDLE
@@ -476,14 +544,8 @@ class _Simulation:
                 self.incident_plans.append(plan)
         else:
             plan = Plan({vehicle.id: [] for vehicle in self.fleet}, 0, 0, 0, "EMPTY")
-        self.apply_plan(plan, pending_calls)
-        final_cleanup = (
-            self.report_stream_finished
-            and not any(vehicle.queue for vehicle in self.fleet)
-            and all(not vehicle.committed for vehicle in self.fleet)
-        )
-        if not final_cleanup:
-            self.rebalance_idle_vehicles()
+        self.apply_plan(plan)
+        self.rebalance_idle_vehicles()
 
     def report_emergency(self, emergency: Call) -> None:
         updated_bounds = expanded_bounds(self.coverage_bounds, emergency.location)
@@ -500,7 +562,7 @@ class _Simulation:
         self.record_action(vehicle, "Finish job")
         vehicle.assignment, vehicle.available = None, self.current_time
         # Preserve SERVICING until the dispatch decision selects chaining,
-        # coverage, or a final return, including jobs located at base.
+        # coverage, or a legacy base return, including jobs located at base.
 
     def finish_movement(self, vehicle: Ambulance, call_id: int | None) -> bool:
         movement = vehicle.movement
@@ -534,14 +596,13 @@ class _Simulation:
             assert isinstance(event.payload, Call)
             self.report_emergency(event.payload)
             return _DispatchDecision(required=True, reoptimize=self.config.mode == "online")
-        if event.kind == _EventKind.REPORT_STREAM_FINISHED:
-            self.report_stream_finished = True
-            return _DispatchDecision(required=True)
         if event.kind == _EventKind.INITIALIZE:
             if not any(call.time <= self.current_time for call in self.calls):
                 self.rebalance_idle_vehicles()
             return _DispatchDecision(required=True, reoptimize=True)
         if event.kind == _EventKind.COVERAGE_DUE:
+            if event.time != self.coverage_wakeup_time:
+                return _DispatchDecision()
             self.coverage_wakeup_time = None
             return _DispatchDecision(required=True)
         if event.kind == _EventKind.DISPATCH_DUE:
@@ -562,7 +623,12 @@ class _Simulation:
 
     def result(self) -> SimulationResult:
         assert len(self.emergencies) == len(self.calls)
-        validate_execution(self.emergencies, self.movements, len(self.fleet))
+        validate_execution(
+            self.emergencies,
+            self.movements,
+            len(self.fleet),
+            require_return_to_base=not self.config.staging,
+        )
         lines = [
             f"Vehicle {vehicle_id}: {(time // 60) % 24:02d}:{time % 60:02d} {action}"
             for time, _, vehicle_id, action in sorted(self.records)
@@ -587,16 +653,13 @@ class _Simulation:
             reused_plans=self.reused_plan_count,
             map_history=self.map_history,
             coverage_skipped_budget=self.skipped_coverage_count,
+            coverage_availability=self.coverage_availability,
         )
 
     def run(self) -> SimulationResult:
         self.schedule_event(self.current_time, _EventKind.INITIALIZE)
         for emergency in sorted(self.calls, key=lambda call: (call.time, call.index)):
             self.schedule_event(emergency.time, _EventKind.EMERGENCY_REPORTED, payload=emergency)
-        if self.calls:
-            self.schedule_event(
-                max(call.time for call in self.calls), _EventKind.REPORT_STREAM_FINISHED
-            )
         while self.events:
             self.current_time = self.events[0].time
             for vehicle in self.fleet:

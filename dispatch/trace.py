@@ -99,6 +99,7 @@ def build_trace(
         ],
         "dispatch": {
             "mapHistory": result.map_history,
+            "coverage": result.coverage_availability,
             "plans": [
                 {
                     "algorithm": plan.algorithm,

@@ -6,6 +6,39 @@ depend on host load and include subprocess startup; the tables are observations,
 not performance guarantees. Raw snapshots are [shipped](benchmark-shipped.txt),
 [focused](benchmark-focused.txt), and [per-solve JSON](benchmark-metrics.json).
 
+## Availability-aware coverage
+
+The deployment score now includes busy vehicles' remaining locked/known queued
+work and their projected ready locations. The frontend uses timestamped readiness
+snapshots for its response-time terrain and heatmap. Only free, unqueued vehicles
+can relocate; fixed emergency assignments remain locked. Checks become more
+frequent near readiness, under the existing coverage/runtime budget.
+
+All 346 Python tests and 96 frontend tests passed. Small coverage cases with one
+or two movable vehicles and a busy anchor match independent exhaustive solutions,
+for both worst-case and mean response objectives. A timed simulation verifies
+relocation can change before a locked job completes.
+
+A focused comparison used identical availability-aware coverage for both variants:
+
+| Scenario | Strategy 4 total response | Greedy-staged total response |
+|---|---:|---:|
+| brief_2_vehicles | 44 | 44 |
+| clustered_1 | 575 | 567 |
+| overloaded_1 | 9,565 | 15,562 |
+| rush_hour_1 | 4,142 | 6,136 |
+
+All eight runs were valid, with no fallbacks and a maximum process runtime of
+14.87 seconds. Weighted average response was 139.09 vs 216.59 minutes on this
+four-scenario subset. Strategy 4 was slightly worse on clustered_1; these results
+do not establish universal improvement or a globally optimal online day.
+Snapshots: [table](benchmark-availability.txt) and
+[metrics/proof-status counts](benchmark-availability-metrics.json).
+
+```bash
+python -m tools.benchmark_dispatch --inputs inputs/brief_2_vehicles.txt inputs/generated/clustered_1.txt inputs/generated/overloaded_1.txt inputs/generated/rush_hour_1.txt --variants strategy4,greedy-staged --workers 1 --output .bench_out/availability-benchmark.json
+```
+
 ## Readability refactor verification
 
 The implementation was refactored into named DP states, focused MILP/coverage

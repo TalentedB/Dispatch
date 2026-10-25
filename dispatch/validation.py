@@ -43,7 +43,11 @@ def validate_plan(plan: Plan, calls: list[Call], anchors: list[Anchor], now: int
 
 
 def validate_execution(
-    emergencies: dict[int, Emergency], movements: list[Movement], fleet_size: int
+    emergencies: dict[int, Emergency],
+    movements: list[Movement],
+    fleet_size: int,
+    *,
+    require_return_to_base: bool = True,
 ) -> None:
     """Replay exact physical segments and service intervals, independently of text."""
     incident_movements = [
@@ -67,7 +71,8 @@ def validate_execution(
                 "impossible speed",
             )
             position, last_movement_end = movement.destination, movement.end
-        require(position == BASE, "vehicle did not return home")
+        if require_return_to_base:
+            require(position == BASE, "vehicle did not return home")
         vehicle_emergencies = sorted(
             (emergency for emergency in emergencies.values() if emergency.vehicle == vehicle_id),
             key=lambda emergency: (emergency.start, emergency.completion, emergency.call.index),
