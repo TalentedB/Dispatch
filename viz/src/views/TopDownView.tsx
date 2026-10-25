@@ -10,49 +10,160 @@ import type { ViewPlugin, ViewProps } from './types'
 
 const sy = (y: number) => -y
 
-/** Deterministic per-block noise, so parks stay put between renders. */
+/** Deterministic per-block noise, so buildings and parks stay put between renders. */
 const hash = (x: number, y: number) => {
   const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
   return h - Math.floor(h)
 }
 
-/** One rounded rectangle as path commands (world units). */
-function roundRect(x0: number, y0: number, x1: number, y1: number, r: number) {
-  return `M${x0 + r} ${y0}H${x1 - r}A${r} ${r} 0 0 1 ${x1} ${y0 + r}V${y1 - r}A${r} ${r} 0 0 1 ${x1 - r} ${y1}` +
-    `H${x0 + r}A${r} ${r} 0 0 1 ${x0} ${y1 - r}V${y0 + r}A${r} ${r} 0 0 1 ${x0 + r} ${y0}Z`
-}
+type Range = { x0: number; x1: number; y0: number; y1: number }
+/** Flat list of rectangles in world units (y already flipped): x0, y0, x1, y1, x0, ... */
+type Rects = number[]
+
+const street = (n: number) => (n === 0 ? 0.2 : n % 5 === 0 ? 0.15 : 0.08)
+const BUILDING_TONES = 3
 
 /**
  * Vehicles drive along grid lines, so the lines are streets and each unit cell is
  * a city block. Every 5th street is a wider avenue; the axes through base are the
- * main avenues. A few blocks are parks. Built as two paths so 80x80 maps stay cheap.
+ * main avenues. Blocks are split into a few buildings (deterministic per block) and
+ * some are parks with trees. `detail` off gives plain lots, for when blocks are tiny.
  */
-function cityPaths({ minX, maxX, minY, maxY }: Bounds) {
-  const street = (n: number) => (n === 0 ? 0.22 : n % 5 === 0 ? 0.16 : 0.09)
-  let blocks = ''
-  let parks = ''
-  for (let x = minX; x < maxX; x++) {
-    for (let y = minY; y < maxY; y++) {
-      const d = roundRect(x + street(x), sy(y + 1) + street(y + 1), x + 1 - street(x + 1), sy(y) - street(y), 0.07)
-      if (hash(x, y) < 0.06) parks += d
-      else blocks += d
+function cityGeometry({ x0, x1, y0, y1 }: Range, detail: boolean) {
+  const lots: Rects = []
+  const parks: Rects = []
+  const trees: Rects = []
+  const buildings: Rects[] = Array.from({ length: BUILDING_TONES }, () => [])
+  for (let x = x0; x < x1; x++) {
+    for (let y = y0; y < y1; y++) {
+      const ax = x + street(x)
+      const bx = x + 1 - street(x + 1)
+      const ay = sy(y + 1) + street(y + 1)
+      const by = sy(y) - street(y)
+      if (hash(x, y) < 0.07) {
+        parks.push(ax, ay, bx, by)
+        if (detail) {
+          for (let i = 0; i < 4; i++) {
+            const tx = ax + 0.15 + (bx - ax - 0.3) * hash(x + i * 13, y)
+            const ty = ay + 0.15 + (by - ay - 0.3) * hash(x, y + i * 17)
+            trees.push(tx - 0.07, ty - 0.07, tx + 0.07, ty + 0.07)
+          }
+        }
+        continue
+      }
+      lots.push(ax, ay, bx, by)
+      if (!detail) continue
+      // Split the lot into 1, 2 or 4 buildings with small gaps between them.
+      const g = 0.05
+      const [ix0, iy0, ix1, iy1] = [ax + g, ay + g, bx - g, by - g]
+      const mx = ix0 + (ix1 - ix0) * (0.4 + 0.2 * hash(y, x))
+      const my = iy0 + (iy1 - iy0) * (0.4 + 0.2 * hash(x * 3, y * 7))
+      const pattern = Math.floor(hash(x * 7, y * 3) * 4)
+      const parts =
+        pattern === 0 ? [ix0, iy0, ix1, iy1]
+          : pattern === 1 ? [ix0, iy0, mx - g / 2, iy1, mx + g / 2, iy0, ix1, iy1]
+            : pattern === 2 ? [ix0, iy0, ix1, my - g / 2, ix0, my + g / 2, ix1, iy1]
+              : [ix0, iy0, mx - g / 2, my - g / 2, mx + g / 2, iy0, ix1, my - g / 2,
+                ix0, my + g / 2, mx - g / 2, iy1, mx + g / 2, my + g / 2, ix1, iy1]
+      for (let i = 0; i < parts.length; i += 4) {
+        buildings[Math.floor(hash(x * 5 + i, y * 11 - i) * BUILDING_TONES)].push(parts[i], parts[i + 1], parts[i + 2], parts[i + 3])
+      }
     }
   }
-  return { blocks, parks }
+  return { lots, parks, trees, buildings }
 }
 
-function City({ bounds, px }: { bounds: Bounds; px: number }) {
-  const { blocks, parks } = useMemo(() => cityPaths(bounds), [bounds])
-  const { minX, maxX, minY, maxY } = bounds
-  return (
-    <g>
-      <rect x={minX} y={sy(maxY)} width={maxX - minX} height={maxY - minY} fill={themeColor('map-paper')} />
-      <path d={blocks} fill={themeColor('map-block')} stroke={themeColor('map-block-edge')} strokeWidth={px} />
-      <path d={parks} fill={themeColor('map-park')} stroke={themeColor('map-park-edge')} strokeWidth={px} />
-      <line x1={minX} x2={maxX} y1={0} y2={0} stroke={themeColor('map-major')} strokeWidth={1.5 * px} strokeDasharray={`${6 * px} ${5 * px}`} />
-      <line x1={0} x2={0} y1={sy(minY)} y2={sy(maxY)} stroke={themeColor('map-major')} strokeWidth={1.5 * px} strokeDasharray={`${6 * px} ${5 * px}`} />
-    </g>
-  )
+/** The part of the grid on screen, snapped outward to 8-block chunks so panning rarely rebuilds geometry. */
+function visibleRange(vb: number[], bounds: Bounds): Range {
+  const snap = 8
+  const pad = 40 // never draw more than this far past the service area
+  const lo = (v: number) => Math.floor(v / snap) * snap
+  const hi = (v: number) => Math.ceil(v / snap) * snap
+  return {
+    x0: Math.max(lo(vb[0]) - 1, bounds.minX - pad),
+    x1: Math.min(hi(vb[0] + vb[2]) + 1, bounds.maxX + pad),
+    y0: Math.max(lo(-(vb[1] + vb[3])) - 1, bounds.minY - pad),
+    y1: Math.min(hi(-vb[1]) + 1, bounds.maxY + pad),
+  }
+}
+
+/**
+ * The city is drawn to a canvas, not SVG: it is thousands of shapes that only change
+ * on pan or zoom, while the SVG on top re-renders every animation frame.
+ */
+function CityCanvas({ bounds, vb, width, height }: { bounds: Bounds; vb: number[]; width: number; height: number }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const scale = width / vb[2]
+  const r = visibleRange(vb, bounds)
+  const detail = scale >= 12 // a block is at least 12 screen pixels
+  const geo = useMemo(() => cityGeometry({ x0: r.x0, x1: r.x1, y0: r.y0, y1: r.y1 }, detail), [r.x0, r.x1, r.y0, r.y1, detail])
+  const [vx, vy] = vb
+
+  useEffect(() => {
+    const canvas = ref.current
+    const g = canvas?.getContext('2d')
+    if (!canvas || !g) return
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = Math.round(width * dpr)
+    canvas.height = Math.round(height * dpr)
+    g.setTransform(dpr * scale, 0, 0, dpr * scale, -vx * scale * dpr, -vy * scale * dpr)
+    const px = 1 / scale
+    const rects = (list: Rects, radius: number) => {
+      g.beginPath()
+      for (let i = 0; i < list.length; i += 4) g.roundRect(list[i], list[i + 1], list[i + 2] - list[i], list[i + 3] - list[i + 1], radius)
+    }
+    g.fillStyle = themeColor('map-road')
+    g.fillRect(vx, vy, width * px, height * px)
+    rects(geo.lots, 0.05)
+    g.fillStyle = themeColor('map-lot')
+    g.fill()
+    g.strokeStyle = themeColor('map-building-edge')
+    g.lineWidth = 0.75 * px
+    geo.buildings.forEach((list, i) => {
+      rects(list, 0.03)
+      g.fillStyle = themeColor(`map-building-${i + 1}`)
+      g.fill()
+      g.stroke()
+    })
+    rects(geo.parks, 0.06)
+    g.fillStyle = themeColor('map-park')
+    g.fill()
+    rects(geo.trees, 0.07)
+    g.fillStyle = themeColor('map-tree')
+    g.fill()
+
+    // Avenue centre lines; the two through base are dashed.
+    g.strokeStyle = themeColor('map-lane')
+    g.lineWidth = px
+    g.beginPath()
+    for (let x = Math.ceil(r.x0 / 5) * 5; x <= r.x1; x += 5) if (x !== 0) { g.moveTo(x, sy(r.y0)); g.lineTo(x, sy(r.y1)) }
+    for (let y = Math.ceil(r.y0 / 5) * 5; y <= r.y1; y += 5) if (y !== 0) { g.moveTo(r.x0, sy(y)); g.lineTo(r.x1, sy(y)) }
+    g.stroke()
+    g.lineWidth = 1.5 * px
+    g.setLineDash([7 * px, 6 * px])
+    g.beginPath()
+    g.moveTo(r.x0, 0); g.lineTo(r.x1, 0)
+    g.moveTo(0, sy(r.y0)); g.lineTo(0, sy(r.y1))
+    g.stroke()
+
+    // Everything outside the service area is the same city, washed out.
+    const { minX, maxX, minY, maxY } = bounds
+    g.beginPath()
+    g.rect(vx, vy, width * px, height * px)
+    g.rect(minX, sy(maxY), maxX - minX, maxY - minY)
+    g.globalAlpha = 0.55
+    g.fillStyle = themeColor('map-road')
+    g.fill('evenodd')
+    g.globalAlpha = 0.5
+    g.strokeStyle = themeColor('map-axis')
+    g.lineWidth = px
+    g.setLineDash([3 * px, 4 * px])
+    g.strokeRect(minX, sy(maxY), maxX - minX, maxY - minY)
+    g.globalAlpha = 1
+    g.setLineDash([])
+  }, [geo, bounds, vx, vy, scale, width, height, r.x0, r.x1, r.y0, r.y1])
+
+  return <canvas ref={ref} aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ width, height }} />
 }
 
 /** A small numbered tag pinned to the top-right of a marker. */
@@ -151,10 +262,14 @@ function TopDown({ prepared, frame, overlays }: ViewProps) {
     setView({ zoom: 1, cx: (minX + maxX) / 2, cy: sy((minY + maxY) / 2) })
   }, [minX, maxX, minY, maxY])
 
-  const fit = Math.min(width / (maxX - minX + 2), height / (maxY - minY + 2)) || 1
+  // Screen space covered by floating controls (demo mode) or the guidance line, kept clear when fitting.
+  const demo = ref.current?.closest('.is-demo') != null
+  const inset = demo ? { top: 84, bottom: 200 } : { top: 16, bottom: 40 }
+  const fit = Math.min(width / (maxX - minX + 2), (height - inset.top - inset.bottom) / (maxY - minY + 2)) || 1
   const scale = fit * view.zoom
   const px = 1 / scale
-  const vb = [view.cx - width / 2 / scale, view.cy - height / 2 / scale, width / scale, height / scale]
+  const shift = (inset.bottom - inset.top) / 2 / scale
+  const vb = [view.cx - width / 2 / scale, view.cy - height / 2 / scale + shift, width / scale, height / scale]
 
   const onWheel = (e: WheelEvent) => {
     const rect = ref.current!.getBoundingClientRect()
@@ -180,9 +295,9 @@ function TopDown({ prepared, frame, overlays }: ViewProps) {
     <div ref={ref} className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
       onWheel={onWheel} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={() => (drag.current = null)}
       onDoubleClick={() => setView({ zoom: 1, cx: (minX + maxX) / 2, cy: sy((minY + maxY) / 2) })}>
+      {width > 0 && <CityCanvas bounds={prepared.bounds} vb={vb} width={width} height={height} />}
       {width > 0 && (
-        <svg role="img" aria-label="City grid showing emergency calls, base, and vehicle positions" width={width} height={height} viewBox={vb.join(' ')} className="block select-none">
-          <City bounds={prepared.bounds} px={px} />
+        <svg role="img" aria-label="City grid showing emergency calls, base, and vehicle positions" width={width} height={height} viewBox={vb.join(' ')} className="relative block select-none">
           {active.filter((o) => o.under).map((o) => <g key={o.id}>{o.render.map2d!(ctx)}</g>)}
           <BaseMarker px={px} />
           {/* Done calls first so live ones draw on top. */}

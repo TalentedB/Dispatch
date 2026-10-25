@@ -49,6 +49,8 @@
   --color-state-return: #466f85; --color-state-reposition: #7a6794; --color-state-done: #44775a;
   --color-label-paper: #faf9f6; --color-coverage-near: #a6baab; --color-coverage-mid: #d7c799; --color-coverage-far: #b66f58;
   --color-transparent: transparent; --color-map-light: #fdfbf6;
-  --color-map-block: #f0ece5; --color-map-block-edge: #e4dfd6; --color-map-park: #e2e9dc; --color-map-park-edge: #d3ddcb;
+  --color-map-road: #fdfcfa; --color-map-lot: #f2eee8; --color-map-lane: #e6d9b2;
+  --color-map-building-1: #ece7df; --color-map-building-2: #e7e1d8; --color-map-building-3: #e2dbd0; --color-map-building-edge: #d9d1c4;
+  --color-map-park: #dfe8d5; --color-map-tree: #bccdab;
   --coverage-ramp: linear-gradient(90deg, var(--color-coverage-near), var(--color-coverage-mid), var(--color-coverage-far));
 }

@@ -24,6 +24,7 @@ npm run dev        # http://localhost:5173
 | Transport | play/pause, ±1 min steps, jump to start/end, speed 1–120 sim-min/s; the scrubber shows each algorithm's busy-vehicle curve and red ticks where calls come in |
 | Inspector | **Compare**: checker metrics for every algorithm on this scenario, best value in bold, `L`/`R` buttons load an algorithm into a pane. **Log**: the printed schedule, synced to the clock (click a line to jump to it). **Legend** |
 | Keyboard | `Space` play/pause · `←/→` ±1 min (`⇧` ±10) · `[` `]` speed · `Home`/`End` |
+| Demo mode | *Demo* button or `F`: full-screen map with floating controls; `Esc` leaves. Link straight in with `?demo&scenario=rush_hour_1` |
 | Drag & drop | drop trace JSON files anywhere to add them |
 
 ### Views

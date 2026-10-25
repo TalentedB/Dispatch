@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Ambulance, Columns2, PanelRight, Square, Upload } from 'lucide-react'
+import { Ambulance, Columns2, Maximize2, Minimize2, PanelRight, Square, Upload } from 'lucide-react'
 import { DEFAULT_OVERLAYS } from '@/overlays/registry'
 import { addTraceFiles, dataStore, loadManifest, useScenarioTraces, useScenarios, useTrace } from '@/data/traces'
 import { clockActions, useClockDriver } from '@/playback/clock'
@@ -46,13 +46,37 @@ export default function App() {
 
   const scenarios = useScenarios()
   const loadError = dataStore.use((s) => s.error)
-  const [scenarioId, setScenarioId] = useState<string | null>(null)
+  // ?scenario=rush_hour_1&demo opens straight into a scenario, e.g. for a presentation.
+  const [scenarioId, setScenarioId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('scenario'))
   const [split, setSplit] = useState(false)
   const [inspector, setInspector] = useState(() => !window.matchMedia('(max-width: 760px)').matches)
   const [panes, setPanes] = useState<PaneState[]>([newPane('topdown'), newPane('isometric')])
   const [notice, setNotice] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [demo, setDemo] = useState(() => new URLSearchParams(window.location.search).has('demo'))
   const fileInput = useRef<HTMLInputElement>(null)
+
+  // Demo mode: the map fills the screen and the controls float over it. F toggles, Esc leaves.
+  const toggleDemo = (on: boolean) => {
+    setDemo(on)
+    if (on) document.documentElement.requestFullscreen?.().catch(() => {})
+    else if (document.fullscreenElement) void document.exitFullscreen()
+  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).closest('input, textarea, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"]')) return
+      if (e.key === 'f' || e.key === 'F') toggleDemo(!demo)
+      else if (e.key === 'Escape' && demo) toggleDemo(false)
+    }
+    // Leaving browser fullscreen (Esc is eaten by the browser there) also leaves demo mode.
+    const onFullscreen = () => !document.fullscreenElement && setDemo(false)
+    window.addEventListener('keydown', onKey)
+    document.addEventListener('fullscreenchange', onFullscreen)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.removeEventListener('fullscreenchange', onFullscreen)
+    }
+  }, [demo])
 
   const scenario = scenarios.find((s) => s.id === scenarioId)
   useEffect(() => {
@@ -92,10 +116,31 @@ export default function App() {
   }
 
   const groups = GROUP_ORDER.map((g) => [g, scenarios.filter((s) => s.group === g)] as const).filter(([, s]) => s.length)
+  const scenarioSelect = (
+    <Select value={scenario?.id ?? null} onValueChange={(v) => v && setScenarioId(v)}
+      items={Object.fromEntries(scenarios.map((s) => [s.id, s.label]))}>
+      <SelectTrigger className="scenario-select" aria-labelledby="scenario-label">
+        <SelectValue placeholder="Scenario" />
+      </SelectTrigger>
+      <SelectContent>
+        {groups.map(([g, list]) => (
+          <SelectGroup key={g}>
+            <SelectLabel className="capitalize">{g}</SelectLabel>
+            {list.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.label}
+                <span className="ml-auto pl-3 text-xs text-muted-foreground">{s.vehicles} vehicles / {s.calls} calls</span>
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        ))}
+      </SelectContent>
+    </Select>
+  )
 
   return (
     <TooltipProvider delay={800}>
-      <div className="dispatch-app"
+      <div className={`dispatch-app ${demo ? 'is-demo' : ''}`}
         onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
         onDragLeave={(e) => e.currentTarget === e.target && setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); void addFiles(e.dataTransfer.files) }}>
@@ -107,6 +152,9 @@ export default function App() {
           </div>
           <div className="header-actions">
             {notice && <span role="status" className="upload-notice">{notice}</span>}
+            <Button variant="outline" size="sm" onClick={() => toggleDemo(true)}>
+              <Maximize2 /> Demo
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => fileInput.current?.click()}>
               <Upload /> Load trace
             </Button>
@@ -116,25 +164,7 @@ export default function App() {
         </header>
         <div className="scenario-toolbar">
           <label className="scenario-label" id="scenario-label">Scenario</label>
-          <Select value={scenario?.id ?? null} onValueChange={(v) => v && setScenarioId(v)}
-            items={Object.fromEntries(scenarios.map((s) => [s.id, s.label]))}>
-            <SelectTrigger className="scenario-select" aria-labelledby="scenario-label">
-              <SelectValue placeholder="Scenario" />
-            </SelectTrigger>
-            <SelectContent>
-              {groups.map(([g, list]) => (
-                <SelectGroup key={g}>
-                  <SelectLabel className="capitalize">{g}</SelectLabel>
-                  {list.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.label}
-                      <span className="ml-auto pl-3 text-xs text-muted-foreground">{s.vehicles} vehicles / {s.calls} calls</span>
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
+          {scenarioSelect}
           {scenario && (
             <div className="scenario-facts">
               <span><strong>{scenario.vehicles}</strong> vehicles</span>
@@ -174,6 +204,17 @@ export default function App() {
         </main>
 
         <Transport traces={visible} />
+
+        {demo && (
+          <div className="demo-hud">
+            <Ambulance aria-hidden="true" className="size-4" />
+            <span className="demo-brand">Dispatch</span>
+            {scenarioSelect}
+            <Button variant="ghost" size="sm" onClick={() => toggleDemo(false)} aria-label="Exit demo mode">
+              <Minimize2 /> Exit
+            </Button>
+          </div>
+        )}
 
         {dragging && (
           <div className="drop-overlay">
