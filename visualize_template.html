@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fleet Dispatch Replay</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #77756f;
+    --grid: #e4e2dc; --axis: #c3c0b8; --queued: #d97706; --done: #c9c6bf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615; --panel: #1f1f1d; --text: #ecebe7; --muted: #9a978f;
+      --grid: #2c2b28; --axis: #45433f; --queued: #f59e0b; --done: #4a4844;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+         font: 14px/1.4 ui-sans-serif, system-ui, sans-serif; }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border-radius: 8px; padding: 12px; }
+  canvas { width: 100%; max-height: 70vh; object-fit: contain; display: block; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .controls input[type=range] { flex: 1; min-width: 160px; }
+  button, select { font: inherit; padding: 4px 10px; border-radius: 6px;
+                   border: 1px solid var(--axis); background: var(--panel); color: var(--text); cursor: pointer; }
+  .clock { font: 600 28px ui-monospace, monospace; }
+  table { width: 100%; border-collapse: collapse; font-family: ui-monospace, monospace; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--grid); }
+  th { color: var(--muted); font-weight: 500; }
+  .zbar { height: 8px; border-radius: 4px; min-width: 2px; }
+  .muted { color: var(--muted); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 6px; }
+  pre { margin: 0; font-size: 12px; white-space: pre-wrap; max-height: 220px; overflow: auto; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; font-size: 12px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<h1>Fleet Dispatch Replay</h1>
+<div class="layout">
+  <div class="card">
+    <div class="controls">
+      <button id="play">Play</button>
+      <button id="back">−1m</button>
+      <button id="fwd">+1m</button>
+      <select id="speed">
+        <option value="1">1 min/frame</option>
+        <option value="5" selected>5 min/frame</option>
+        <option value="15">15 min/frame</option>
+      </select>
+      <label><input id="coverage" type="checkbox" checked> Coverage</label>
+      <label>R <input id="radius" type="number" min="1" value="5" style="width:56px"> min</label>
+      <input id="slider" type="range" min="0" value="0">
+    </div>
+    <canvas id="map" width="900" height="700"></canvas>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--queued)"></i>waiting call</span>
+      <span><i class="dot" style="background:var(--done)"></i>past call</span>
+      <span>bold square = current grid</span>
+      <span>hollow square + dotted line = idle post for coverage</span>
+      <span>dashed line = driving to job · ring = z (minutes until free, incl. queued jobs)</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="clock" id="clock">00:00</div>
+    <div class="muted">Grid: <span id="grid"></span></div>
+    <h2>Vehicles · pos = [x, y, z]</h2>
+    <table>
+      <thead><tr><th>V</th><th>x</th><th>y</th><th>z</th><th style="width:30%"></th><th>state</th></tr></thead>
+      <tbody id="vehicles"></tbody>
+    </table>
+    <h2>Waiting queue</h2>
+    <div id="queue" class="muted">empty</div>
+    <h2>Dispatch log</h2>
+    <pre id="log"></pre>
+    <h2>Final metrics</h2>
+    <pre id="summary"></pre>
+  </div>
+</div>
+<script>
+const DATA = __DATA__;
+const { calls, frames, summary } = DATA;
+const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c"];
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const fmt = m => {
+  const d = Math.floor(m / 1440), r = m % 1440;
+  return String(Math.floor(r / 60)).padStart(2, "0") + ":" + String(r % 60).padStart(2, "0") + (d ? `+${d}d` : "");
+};
+const place = (x, y) => {
+  const p = [];
+  if (y > 0) p.push(`${y}N`); if (y < 0) p.push(`${-y}S`);
+  if (x > 0) p.push(`${x}E`); if (x < 0) p.push(`${-x}W`);
+  return p.length ? p.join(" ") : "base";
+};
+
+// Map view follows the simulation's grid, which grows with the furthest call so far
+const canvas = document.getElementById("map"), ctx = canvas.getContext("2d");
+const pad = 30;
+let minX, maxX, minY, maxY, cell;
+const sx = x => pad + (x - minX) * cell;
+const sy = y => pad + (maxY - y) * cell;
+function setView(size) {
+  const n = size + 1;
+  minX = minY = -n; maxX = maxY = n;
+  cell = Math.min(canvas.width - 2 * pad, canvas.height - 2 * pad) / (2 * n);
+}
+const maxZ = Math.max(1, ...frames.flatMap(f => f.vehicles.map(v => v.pos[2])));
+
+function draw(f) {
+  setView(f.grid);
+  ctx.fillStyle = css("--panel");
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.lineWidth = 1;
+  for (let x = minX; x <= maxX; x++) {
+    ctx.strokeStyle = x === 0 ? css("--axis") : css("--grid");
+    ctx.beginPath(); ctx.moveTo(sx(x), sy(maxY)); ctx.lineTo(sx(x), sy(minY)); ctx.stroke();
+  }
+  for (let y = minY; y <= maxY; y++) {
+    ctx.strokeStyle = y === 0 ? css("--axis") : css("--grid");
+    ctx.beginPath(); ctx.moveTo(sx(minX), sy(y)); ctx.lineTo(sx(maxX), sy(y)); ctx.stroke();
+  }
+  if (f.grid > 0) {
+    ctx.strokeStyle = css("--text"); ctx.lineWidth = 2;
+    ctx.strokeRect(sx(-f.grid), sy(f.grid), 2 * f.grid * cell, 2 * f.grid * cell);
+  }
+  ctx.fillStyle = css("--muted");
+  ctx.font = "12px ui-sans-serif, system-ui";
+  ctx.fillText("N", sx(0) + 4, pad - 10);
+  ctx.fillText("E", sx(maxX) + 6, sy(0) + 4);
+
+  // Base
+  ctx.fillStyle = css("--text");
+  ctx.fillRect(sx(0) - 6, sy(0) - 6, 12, 12);
+
+  const queued = new Set(f.queue);
+  const assigned = new Map(f.vehicles.flatMap(v => v.jobs.map(j => [j, v.id])));
+  calls.forEach((c, i) => {
+    if (c[0] > f.minute) return;
+    let color = css("--done");
+    if (queued.has(i)) color = css("--queued");
+    if (assigned.has(i)) color = COLORS[(assigned.get(i) - 1) % COLORS.length];
+    ctx.strokeStyle = color; ctx.lineWidth = 3;
+    const x = sx(c[1]), y = sy(c[2]);
+    ctx.beginPath(); ctx.moveTo(x - 6, y - 6); ctx.lineTo(x + 6, y + 6);
+    ctx.moveTo(x + 6, y - 6); ctx.lineTo(x - 6, y + 6); ctx.stroke();
+  });
+
+  // Coverage: every intersection reachable within R minutes (Manhattan distance, so a diamond)
+  if (document.getElementById("coverage").checked) {
+    const r = Math.max(1, +document.getElementById("radius").value || 1) * cell;
+    f.vehicles.forEach(v => {
+      const [x, y] = v.pos;
+      ctx.fillStyle = COLORS[(v.id - 1) % COLORS.length];
+      ctx.globalAlpha = 0.12;
+      ctx.beginPath();
+      ctx.moveTo(sx(x), sy(y) - r); ctx.lineTo(sx(x) + r, sy(y));
+      ctx.lineTo(sx(x), sy(y) + r); ctx.lineTo(sx(x) - r, sy(y));
+      ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  f.vehicles.forEach(v => {
+    const color = COLORS[(v.id - 1) % COLORS.length];
+    const [x, y, z] = v.pos;
+    if (v.jobs.length) {
+      ctx.setLineDash([5, 5]); ctx.strokeStyle = color; ctx.lineWidth = 2;
+      // Path follows the algorithm through every queued job: east/west first, then north/south
+      ctx.beginPath(); ctx.moveTo(sx(x), sy(y));
+      let ay = y;
+      v.jobs.forEach(j => { const c = calls[j]; ctx.lineTo(sx(c[1]), sy(ay)); ctx.lineTo(sx(c[1]), sy(c[2])); ay = c[2]; });
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    if (!v.jobs.length && z === 0 && v.post) {
+      const [px, py] = v.post;
+      ctx.strokeStyle = color; ctx.lineWidth = 2;
+      ctx.strokeRect(sx(px) - 7, sy(py) - 7, 14, 14);
+      if (px !== x || py !== y) {
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath(); ctx.moveTo(sx(x), sy(y)); ctx.lineTo(sx(px), sy(y)); ctx.lineTo(sx(px), sy(py)); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+    if (z > 0) {
+      ctx.strokeStyle = color; ctx.globalAlpha = 0.35; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(sx(x), sy(y), 12 + 30 * z / maxZ, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(sx(x), sy(y), 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 11px ui-sans-serif, system-ui";
+    ctx.textAlign = "center"; ctx.fillText(v.id, sx(x), sy(y) + 4); ctx.textAlign = "start";
+    ctx.fillStyle = css("--text"); ctx.font = "12px ui-monospace, monospace";
+    ctx.fillText(`z=${z}`, sx(x) + 13, sy(y) - 10);
+  });
+}
+
+function panel(index) {
+  const f = frames[index];
+  document.getElementById("clock").textContent = fmt(f.minute);
+  const side = 2 * f.grid;
+  document.getElementById("grid").textContent = `${side}x${side} blocks (up to ${f.grid} from base)`;
+  document.getElementById("vehicles").innerHTML = f.vehicles.map(v => {
+    const color = COLORS[(v.id - 1) % COLORS.length];
+    const [x, y, z] = v.pos;
+    let state = z > 0 ? "on scene" : "idle";
+    if (!z && v.post) state = v.post[0] === x && v.post[1] === y ? "at post" : "→ post " + place(v.post[0], v.post[1]);
+    if (v.jobs.length) state = "→ " + v.jobs.map(j => place(calls[j][1], calls[j][2])).join(" → ");
+    return `<tr><td style="color:${color};font-weight:700">${v.id}</td><td>${x}</td><td>${y}</td><td>${z}</td>
+      <td><div class="zbar" style="width:${100 * z / maxZ}%;background:${color}"></div></td><td>${state}</td></tr>`;
+  }).join("");
+  document.getElementById("queue").textContent = f.queue.length
+    ? f.queue.map(i => `${fmt(calls[i][0])} ${place(calls[i][1], calls[i][2])}`).join(", ")
+    : "empty";
+  const lines = frames.slice(0, index + 1).flatMap(fr => fr.log);
+  document.getElementById("log").textContent = lines.slice().reverse().join("\n");
+  draw(f);
+}
+
+const slider = document.getElementById("slider");
+slider.max = frames.length - 1;
+const start = Math.max(0, frames.findIndex(f => f.minute >= calls[0][0]) - 5);
+let index = start, timer = null;
+const show = i => { index = Math.max(0, Math.min(frames.length - 1, i)); slider.value = index; panel(index); };
+
+slider.oninput = () => show(+slider.value);
+document.getElementById("coverage").onchange = () => show(index);
+document.getElementById("radius").oninput = () => show(index);
+document.getElementById("back").onclick = () => show(index - 1);
+document.getElementById("fwd").onclick = () => show(index + 1);
+const playBtn = document.getElementById("play");
+playBtn.onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; playBtn.textContent = "Play"; return; }
+  playBtn.textContent = "Pause";
+  timer = setInterval(() => {
+    if (index >= frames.length - 1) { playBtn.click(); return; }
+    show(index + +document.getElementById("speed").value);
+  }, 120);
+};
+document.getElementById("summary").textContent = summary;
+show(start);
+</script>
+</body>
+</html>

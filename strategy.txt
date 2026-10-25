@@ -1,0 +1,28 @@
+Pathfinding
+
+Strategy 1 Dijkstras: 
+Use Dijkstra's algorithm to find shortest paths on the grid graph.
+
+Strategy 2 Manhattan:
+Use Manhattan distance to find closest ambulances.
+
+Strategy 3 Manhattan + MILP:
+Use Manhattan distance as input to a Mixed-Integer Linear Programming (MILP) model that jointly assigns ambulances to incidents.
+
+Strategy 4 Manhattan + MILP + Response-Time as Z-index:
+Extend the MILP objective with a standardized response-time metric as Z-index to pathfind on response times.
+
+
+Deployment Strategy
+
+Strategy 1 Origin Deployment: 
+Start from Base, and return to Base after every deployment.
+
+Strategy 2 Origin Deployment + Static Resting: 
+Start from Base, and rest to each deployed location.
+ 
+Strategy 3 Dynamic Deployment + Static Resting:
+Initially Place Ambulances start to evenly cover the grid, and rest to each deploy location..
+
+Strategy 4 Dynamic Deployment + Dynamic Resting:
+Initially Place Ambulances start to evenly cover the grid, and dynamically move RESTING ambulances where they are covered the city grid evenly.

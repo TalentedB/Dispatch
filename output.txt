@@ -1,0 +1,706 @@
+Vehicle 1: 00:00 Start Route to Post 1S 1W
+Vehicle 1: 00:00 Drive 2 minutes
+Vehicle 2: 00:00 Start Route to Post 1W
+Vehicle 2: 00:00 Drive 1 minutes
+Vehicle 3: 00:00 Start Route to Post 1N 1W
+Vehicle 3: 00:00 Drive 2 minutes
+Vehicle 4: 00:00 Start Route to Post 1S
+Vehicle 4: 00:00 Drive 1 minutes
+Vehicle 5: 00:00 Start Route to Post 1S 1E
+Vehicle 5: 00:00 Drive 2 minutes
+Vehicle 6: 00:00 Start Route to Post 1N
+Vehicle 6: 00:00 Drive 1 minutes
+Vehicle 7: 00:00 Start Route to Post 1N 1E
+Vehicle 7: 00:00 Drive 2 minutes
+Vehicle 2: 00:01 Arrive at Post 1W
+Vehicle 4: 00:01 Arrive at Post 1S
+Vehicle 6: 00:01 Arrive at Post 1N
+Vehicle 1: 00:02 Arrive at Post 1S 1W
+Vehicle 3: 00:02 Arrive at Post 1N 1W
+Vehicle 5: 00:02 Arrive at Post 1S 1E
+Vehicle 7: 00:02 Arrive at Post 1N 1E
+Vehicle 1: 00:42 Start Route to Job 4S 6W
+Vehicle 1: 00:42 Drive 8 minutes
+Vehicle 4: 00:42 Start Route to Post 4S 3W
+Vehicle 4: 00:42 Drive 6 minutes
+Vehicle 2: 00:42 Start Route to Post 3W
+Vehicle 2: 00:42 Drive 2 minutes
+Vehicle 3: 00:42 Start Route to Post 4N 3W
+Vehicle 3: 00:42 Drive 5 minutes
+Vehicle 5: 00:42 Start Route to Post 4S 3E
+Vehicle 5: 00:42 Drive 5 minutes
+Vehicle 6: 00:42 Start Route to Post 3E
+Vehicle 6: 00:42 Drive 4 minutes
+Vehicle 7: 00:42 Start Route to Post 4N 3E
+Vehicle 7: 00:42 Drive 5 minutes
+Vehicle 2: 00:44 Arrive at Post 3W
+Vehicle 6: 00:46 Arrive at Post 3E
+Vehicle 3: 00:47 Arrive at Post 4N 3W
+Vehicle 5: 00:47 Arrive at Post 4S 3E
+Vehicle 7: 00:47 Arrive at Post 4N 3E
+Vehicle 4: 00:48 Arrive at Post 4S 3W
+Vehicle 1: 00:50 Arrive at Job 4S 6W
+Vehicle 1: 00:50 Start Job
+Vehicle 1: 01:15 Finish Job
+Vehicle 1: 01:15 Start Route to Post 4S 3W
+Vehicle 1: 01:15 Drive 3 minutes
+Vehicle 4: 01:15 Start Route to Post 3S 1E
+Vehicle 4: 01:15 Drive 5 minutes
+Vehicle 5: 01:15 Start Route to Post 3S 4E
+Vehicle 5: 01:15 Drive 2 minutes
+Vehicle 6: 01:15 Start Route to Post 3N 1E
+Vehicle 6: 01:15 Drive 5 minutes
+Vehicle 7: 01:15 Start Route to Post 3N 4E
+Vehicle 7: 01:15 Drive 2 minutes
+Vehicle 5: 01:17 Arrive at Post 3S 4E
+Vehicle 7: 01:17 Arrive at Post 3N 4E
+Vehicle 1: 01:18 Arrive at Post 4S 3W
+Vehicle 4: 01:20 Arrive at Post 3S 1E
+Vehicle 6: 01:20 Arrive at Post 3N 1E
+Vehicle 7: 03:15 Start Route to Job 2N 8E
+Vehicle 7: 03:15 Drive 5 minutes
+Vehicle 1: 03:15 Start Route to Post 5S 4W
+Vehicle 1: 03:15 Drive 2 minutes
+Vehicle 2: 03:15 Start Route to Post 4W
+Vehicle 2: 03:15 Drive 1 minutes
+Vehicle 3: 03:15 Start Route to Post 5N 4W
+Vehicle 3: 03:15 Drive 2 minutes
+Vehicle 4: 03:15 Start Route to Post 5S 4E
+Vehicle 4: 03:15 Drive 5 minutes
+Vehicle 5: 03:15 Start Route to Post 4E
+Vehicle 5: 03:15 Drive 3 minutes
+Vehicle 6: 03:15 Start Route to Post 5N 4E
+Vehicle 6: 03:15 Drive 5 minutes
+Vehicle 2: 03:16 Arrive at Post 4W
+Vehicle 1: 03:17 Arrive at Post 5S 4W
+Vehicle 3: 03:17 Arrive at Post 5N 4W
+Vehicle 5: 03:18 Arrive at Post 4E
+Vehicle 4: 03:20 Arrive at Post 5S 4E
+Vehicle 6: 03:20 Arrive at Post 5N 4E
+Vehicle 7: 03:20 Arrive at Job 2N 8E
+Vehicle 7: 03:20 Start Job
+Vehicle 7: 03:50 Finish Job
+Vehicle 1: 03:50 Start Route to Post 5S 5W
+Vehicle 1: 03:50 Drive 1 minutes
+Vehicle 2: 03:50 Start Route to Post 5W
+Vehicle 2: 03:50 Drive 1 minutes
+Vehicle 3: 03:50 Start Route to Post 5N 5W
+Vehicle 3: 03:50 Drive 1 minutes
+Vehicle 4: 03:50 Start Route to Post 4S 1E
+Vehicle 4: 03:50 Drive 4 minutes
+Vehicle 5: 03:50 Start Route to Post 4S 6E
+Vehicle 5: 03:50 Drive 6 minutes
+Vehicle 6: 03:50 Start Route to Post 4N 1E
+Vehicle 6: 03:50 Drive 4 minutes
+Vehicle 7: 03:50 Start Route to Post 4N 6E
+Vehicle 7: 03:50 Drive 4 minutes
+Vehicle 1: 03:51 Arrive at Post 5S 5W
+Vehicle 2: 03:51 Arrive at Post 5W
+Vehicle 3: 03:51 Arrive at Post 5N 5W
+Vehicle 4: 03:54 Arrive at Post 4S 1E
+Vehicle 6: 03:54 Arrive at Post 4N 1E
+Vehicle 7: 03:54 Arrive at Post 4N 6E
+Vehicle 5: 03:56 Arrive at Post 4S 6E
+Vehicle 3: 06:50 Start Route to Job 5N 3W
+Vehicle 3: 06:50 Drive 2 minutes
+Vehicle 1: 06:50 Start Route to Post 5S 4W
+Vehicle 1: 06:50 Drive 1 minutes
+Vehicle 2: 06:50 Start Route to Post 4W
+Vehicle 2: 06:50 Drive 1 minutes
+Vehicle 6: 06:50 Start Route to Post 5N 4W
+Vehicle 6: 06:50 Drive 6 minutes
+Vehicle 4: 06:50 Start Route to Post 5S 4E
+Vehicle 4: 06:50 Drive 4 minutes
+Vehicle 5: 06:50 Start Route to Post 4E
+Vehicle 5: 06:50 Drive 6 minutes
+Vehicle 7: 06:50 Start Route to Post 5N 4E
+Vehicle 7: 06:50 Drive 3 minutes
+Vehicle 1: 06:51 Arrive at Post 5S 4W
+Vehicle 2: 06:51 Arrive at Post 4W
+Vehicle 3: 06:52 Arrive at Job 5N 3W
+Vehicle 3: 06:52 Start Job
+Vehicle 7: 06:53 Arrive at Post 5N 4E
+Vehicle 4: 06:54 Arrive at Post 5S 4E
+Vehicle 5: 06:56 Arrive at Post 4E
+Vehicle 6: 06:56 Arrive at Post 5N 4W
+Vehicle 3: 07:12 Finish Job
+Vehicle 1: 07:12 Start Route to Post 5S 5W
+Vehicle 1: 07:12 Drive 1 minutes
+Vehicle 2: 07:12 Start Route to Post 5W
+Vehicle 2: 07:12 Drive 1 minutes
+Vehicle 6: 07:12 Start Route to Post 5N 5W
+Vehicle 6: 07:12 Drive 1 minutes
+Vehicle 4: 07:12 Start Route to Post 4S 1E
+Vehicle 4: 07:12 Drive 4 minutes
+Vehicle 5: 07:12 Start Route to Post 4S 6E
+Vehicle 5: 07:12 Drive 6 minutes
+Vehicle 3: 07:12 Start Route to Post 4N 1E
+Vehicle 3: 07:12 Drive 5 minutes
+Vehicle 7: 07:12 Start Route to Post 4N 6E
+Vehicle 7: 07:12 Drive 3 minutes
+Vehicle 1: 07:13 Arrive at Post 5S 5W
+Vehicle 2: 07:13 Arrive at Post 5W
+Vehicle 6: 07:13 Arrive at Post 5N 5W
+Vehicle 7: 07:15 Arrive at Post 4N 6E
+Vehicle 4: 07:16 Arrive at Post 4S 1E
+Vehicle 3: 07:17 Arrive at Post 4N 1E
+Vehicle 5: 07:18 Arrive at Post 4S 6E
+Vehicle 4: 07:35 Start Route to Job 9S 2E
+Vehicle 4: 07:35 Drive 6 minutes
+Vehicle 1: 07:35 Start Route to Post 6S 4W
+Vehicle 1: 07:35 Drive 2 minutes
+Vehicle 2: 07:35 Start Route to Post 4W
+Vehicle 2: 07:35 Drive 1 minutes
+Vehicle 6: 07:35 Start Route to Post 6N 4W
+Vehicle 6: 07:35 Drive 2 minutes
+Vehicle 5: 07:35 Start Route to Post 6S 4E
+Vehicle 5: 07:35 Drive 4 minutes
+Vehicle 7: 07:35 Start Route to Post 4E
+Vehicle 7: 07:35 Drive 6 minutes
+Vehicle 3: 07:35 Start Route to Post 6N 4E
+Vehicle 3: 07:35 Drive 5 minutes
+Vehicle 2: 07:36 Arrive at Post 4W
+Vehicle 1: 07:37 Arrive at Post 6S 4W
+Vehicle 6: 07:37 Arrive at Post 6N 4W
+Vehicle 5: 07:39 Arrive at Post 6S 4E
+Vehicle 3: 07:40 Arrive at Post 6N 4E
+Vehicle 7: 07:41 Arrive at Post 4E
+Vehicle 4: 07:41 Arrive at Job 9S 2E
+Vehicle 4: 07:41 Start Job
+Vehicle 7: 08:05 Start Route to Job 1N 4E
+Vehicle 7: 08:05 Drive 1 minutes
+Vehicle 1: 08:05 Start Route to Post 4S 5W
+Vehicle 1: 08:05 Drive 3 minutes
+Vehicle 6: 08:05 Start Route to Post 4N 5W
+Vehicle 6: 08:05 Drive 3 minutes
+Vehicle 2: 08:05 Start Route to Post 4E
+Vehicle 2: 08:05 Drive 8 minutes
+Vehicle 7: 08:06 Arrive at Job 1N 4E
+Vehicle 7: 08:06 Start Job
+Vehicle 1: 08:08 Arrive at Post 4S 5W
+Vehicle 6: 08:08 Arrive at Post 4N 5W
+Vehicle 2: 08:13 Arrive at Post 4E
+Vehicle 4: 08:16 Finish Job
+Vehicle 5: 08:16 Start Route to Post 6S 4W
+Vehicle 5: 08:16 Drive 8 minutes
+Vehicle 1: 08:16 Start Route to Post 4W
+Vehicle 1: 08:16 Drive 5 minutes
+Vehicle 6: 08:16 Start Route to Post 6N 4W
+Vehicle 6: 08:16 Drive 3 minutes
+Vehicle 4: 08:16 Start Route to Post 6S 4E
+Vehicle 4: 08:16 Drive 5 minutes
+Vehicle 6: 08:19 Arrive at Post 6N 4W
+Vehicle 5: 08:20 Start Route to Job 7S 7W
+Vehicle 5: 08:20 Drive 8 minutes
+Vehicle 1: 08:20 Start Route to Post 4S 5W
+Vehicle 1: 08:20 Drive 4 minutes
+Vehicle 6: 08:20 Start Route to Post 4N 5W
+Vehicle 6: 08:20 Drive 3 minutes
+Vehicle 4: 08:21 Arrive at Post 6S 4E
+Vehicle 7: 08:21 Finish Job
+Vehicle 1: 08:21 Start Route to Post 6S 4W
+Vehicle 1: 08:21 Drive 6 minutes
+Vehicle 2: 08:21 Start Route to Post 4W
+Vehicle 2: 08:21 Drive 8 minutes
+Vehicle 6: 08:21 Start Route to Post 6N 4W
+Vehicle 6: 08:21 Drive 1 minutes
+Vehicle 7: 08:21 Start Route to Post 4E
+Vehicle 7: 08:21 Drive 1 minutes
+Vehicle 6: 08:22 Arrive at Post 6N 4W
+Vehicle 7: 08:22 Arrive at Post 4E
+Vehicle 1: 08:27 Arrive at Post 6S 4W
+Vehicle 2: 08:29 Arrive at Post 4W
+Vehicle 5: 08:28 Arrive at Job 7S 7W
+Vehicle 5: 08:28 Start Job
+Vehicle 5: 09:08 Finish Job
+Vehicle 5: 09:08 Start Route to Post 6S 5W
+Vehicle 5: 09:08 Drive 3 minutes
+Vehicle 2: 09:08 Start Route to Post 5W
+Vehicle 2: 09:08 Drive 1 minutes
+Vehicle 6: 09:08 Start Route to Post 6N 5W
+Vehicle 6: 09:08 Drive 1 minutes
+Vehicle 1: 09:08 Start Route to Post 4S 1E
+Vehicle 1: 09:08 Drive 7 minutes
+Vehicle 4: 09:08 Start Route to Post 4S 6E
+Vehicle 4: 09:08 Drive 4 minutes
+Vehicle 3: 09:08 Start Route to Post 4N 1E
+Vehicle 3: 09:08 Drive 5 minutes
+Vehicle 7: 09:08 Start Route to Post 4N 6E
+Vehicle 7: 09:08 Drive 6 minutes
+Vehicle 2: 09:09 Arrive at Post 5W
+Vehicle 6: 09:09 Arrive at Post 6N 5W
+Vehicle 3: 09:10 Start Route to Job 11N 5E
+Vehicle 3: 09:10 Drive 8 minutes
+Vehicle 5: 09:10 Start Route to Post 7S 6W
+Vehicle 5: 09:10 Drive 1 minutes
+Vehicle 2: 09:10 Start Route to Post 6W
+Vehicle 2: 09:10 Drive 1 minutes
+Vehicle 6: 09:10 Start Route to Post 7N 6W
+Vehicle 6: 09:10 Drive 2 minutes
+Vehicle 1: 09:10 Start Route to Post 7S 6E
+Vehicle 1: 09:10 Drive 9 minutes
+Vehicle 4: 09:10 Start Route to Post 6E
+Vehicle 4: 09:10 Drive 6 minutes
+Vehicle 7: 09:10 Start Route to Post 7N 6E
+Vehicle 7: 09:10 Drive 7 minutes
+Vehicle 2: 09:11 Arrive at Post 6W
+Vehicle 5: 09:11 Arrive at Post 7S 6W
+Vehicle 6: 09:12 Arrive at Post 7N 6W
+Vehicle 4: 09:16 Arrive at Post 6E
+Vehicle 7: 09:17 Arrive at Post 7N 6E
+Vehicle 1: 09:19 Arrive at Post 7S 6E
+Vehicle 3: 09:18 Arrive at Job 11N 5E
+Vehicle 3: 09:18 Start Job
+Vehicle 3: 09:43 Finish Job
+Vehicle 1: 09:43 Start Route to Post 6S 2E
+Vehicle 1: 09:43 Drive 5 minutes
+Vehicle 4: 09:43 Start Route to Post 6S 8E
+Vehicle 4: 09:43 Drive 8 minutes
+Vehicle 3: 09:43 Start Route to Post 6N 2E
+Vehicle 3: 09:43 Drive 8 minutes
+Vehicle 7: 09:43 Start Route to Post 6N 8E
+Vehicle 7: 09:43 Drive 3 minutes
+Vehicle 7: 09:46 Arrive at Post 6N 8E
+Vehicle 1: 09:48 Arrive at Post 6S 2E
+Vehicle 3: 09:51 Arrive at Post 6N 2E
+Vehicle 4: 09:51 Arrive at Post 6S 8E
+Vehicle 2: 10:45 Start Route to Job 3W
+Vehicle 2: 10:45 Drive 3 minutes
+Vehicle 1: 10:45 Start Route to Post 7S 6W
+Vehicle 1: 10:45 Drive 9 minutes
+Vehicle 5: 10:45 Start Route to Post 6W
+Vehicle 5: 10:45 Drive 7 minutes
+Vehicle 4: 10:45 Start Route to Post 7S 6E
+Vehicle 4: 10:45 Drive 3 minutes
+Vehicle 7: 10:45 Start Route to Post 6E
+Vehicle 7: 10:45 Drive 8 minutes
+Vehicle 3: 10:45 Start Route to Post 7N 6E
+Vehicle 3: 10:45 Drive 5 minutes
+Vehicle 4: 10:48 Arrive at Post 7S 6E
+Vehicle 2: 10:48 Arrive at Job 3W
+Vehicle 2: 10:48 Start Job
+Vehicle 3: 10:50 Arrive at Post 7N 6E
+Vehicle 5: 10:52 Arrive at Post 6W
+Vehicle 7: 10:53 Arrive at Post 6E
+Vehicle 1: 10:54 Arrive at Post 7S 6W
+Vehicle 2: 11:08 Finish Job
+Vehicle 2: 11:08 Start Route to Post 6W
+Vehicle 2: 11:08 Drive 3 minutes
+Vehicle 5: 11:08 Start Route to Post 7N 6W
+Vehicle 5: 11:08 Drive 7 minutes
+Vehicle 4: 11:08 Start Route to Post 6S 2E
+Vehicle 4: 11:08 Drive 5 minutes
+Vehicle 7: 11:08 Start Route to Post 6S 8E
+Vehicle 7: 11:08 Drive 8 minutes
+Vehicle 6: 11:08 Start Route to Post 6N 2E
+Vehicle 6: 11:08 Drive 9 minutes
+Vehicle 3: 11:08 Start Route to Post 6N 8E
+Vehicle 3: 11:08 Drive 3 minutes
+Vehicle 2: 11:11 Arrive at Post 6W
+Vehicle 3: 11:11 Arrive at Post 6N 8E
+Vehicle 4: 11:13 Arrive at Post 6S 2E
+Vehicle 5: 11:15 Arrive at Post 7N 6W
+Vehicle 7: 11:16 Arrive at Post 6S 8E
+Vehicle 6: 11:17 Arrive at Post 6N 2E
+Vehicle 7: 11:30 Start Route to Job 6S 10E
+Vehicle 7: 11:30 Drive 2 minutes
+Vehicle 4: 11:30 Start Route to Post 7S 6E
+Vehicle 4: 11:30 Drive 5 minutes
+Vehicle 3: 11:30 Start Route to Post 6E
+Vehicle 3: 11:30 Drive 8 minutes
+Vehicle 6: 11:30 Start Route to Post 7N 6E
+Vehicle 6: 11:30 Drive 5 minutes
+Vehicle 7: 11:32 Arrive at Job 6S 10E
+Vehicle 7: 11:32 Start Job
+Vehicle 4: 11:35 Arrive at Post 7S 6E
+Vehicle 6: 11:35 Arrive at Post 7N 6E
+Vehicle 3: 11:38 Arrive at Post 6E
+Vehicle 7: 12:02 Finish Job
+Vehicle 4: 12:02 Start Route to Post 6S 2E
+Vehicle 4: 12:02 Drive 5 minutes
+Vehicle 7: 12:02 Start Route to Post 6S 8E
+Vehicle 7: 12:02 Drive 2 minutes
+Vehicle 6: 12:02 Start Route to Post 6N 2E
+Vehicle 6: 12:02 Drive 5 minutes
+Vehicle 3: 12:02 Start Route to Post 6N 8E
+Vehicle 3: 12:02 Drive 8 minutes
+Vehicle 7: 12:04 Arrive at Post 6S 8E
+Vehicle 4: 12:07 Arrive at Post 6S 2E
+Vehicle 6: 12:07 Arrive at Post 6N 2E
+Vehicle 3: 12:10 Arrive at Post 6N 8E
+Vehicle 2: 12:15 Start Route to Job 2N 2W
+Vehicle 2: 12:15 Drive 6 minutes
+Vehicle 5: 12:15 Start Route to Post 6W
+Vehicle 5: 12:15 Drive 7 minutes
+Vehicle 6: 12:15 Start Route to Post 7N 6W
+Vehicle 6: 12:15 Drive 9 minutes
+Vehicle 4: 12:15 Start Route to Post 7S 6E
+Vehicle 4: 12:15 Drive 5 minutes
+Vehicle 7: 12:15 Start Route to Post 6E
+Vehicle 7: 12:15 Drive 8 minutes
+Vehicle 3: 12:15 Start Route to Post 7N 6E
+Vehicle 3: 12:15 Drive 3 minutes
+Vehicle 3: 12:18 Arrive at Post 7N 6E
+Vehicle 4: 12:20 Arrive at Post 7S 6E
+Vehicle 2: 12:21 Arrive at Job 2N 2W
+Vehicle 2: 12:21 Start Job
+Vehicle 5: 12:22 Arrive at Post 6W
+Vehicle 7: 12:23 Arrive at Post 6E
+Vehicle 6: 12:24 Arrive at Post 7N 6W
+Vehicle 2: 12:36 Finish Job
+Vehicle 4: 12:36 Start Route to Post 6S 2E
+Vehicle 4: 12:36 Drive 5 minutes
+Vehicle 7: 12:36 Start Route to Post 6S 8E
+Vehicle 7: 12:36 Drive 8 minutes
+Vehicle 2: 12:36 Start Route to Post 6N 2E
+Vehicle 2: 12:36 Drive 8 minutes
+Vehicle 3: 12:36 Start Route to Post 6N 8E
+Vehicle 3: 12:36 Drive 3 minutes
+Vehicle 3: 12:39 Arrive at Post 6N 8E
+Vehicle 4: 12:41 Arrive at Post 6S 2E
+Vehicle 2: 12:44 Arrive at Post 6N 2E
+Vehicle 7: 12:44 Arrive at Post 6S 8E
+Vehicle 6: 13:05 Start Route to Job 8N 9W
+Vehicle 6: 13:05 Drive 4 minutes
+Vehicle 2: 13:05 Start Route to Post 7N 6W
+Vehicle 2: 13:05 Drive 9 minutes
+Vehicle 4: 13:05 Start Route to Post 7S 6E
+Vehicle 4: 13:05 Drive 5 minutes
+Vehicle 7: 13:05 Start Route to Post 6E
+Vehicle 7: 13:05 Drive 8 minutes
+Vehicle 3: 13:05 Start Route to Post 7N 6E
+Vehicle 3: 13:05 Drive 3 minutes
+Vehicle 3: 13:08 Arrive at Post 7N 6E
+Vehicle 4: 13:10 Arrive at Post 7S 6E
+Vehicle 6: 13:09 Arrive at Job 8N 9W
+Vehicle 6: 13:09 Start Job
+Vehicle 7: 13:13 Arrive at Post 6E
+Vehicle 2: 13:14 Arrive at Post 7N 6W
+Vehicle 6: 13:54 Finish Job
+Vehicle 6: 13:54 Start Route to Post 7N 6W
+Vehicle 6: 13:54 Drive 4 minutes
+Vehicle 4: 13:54 Start Route to Post 6S 2E
+Vehicle 4: 13:54 Drive 5 minutes
+Vehicle 7: 13:54 Start Route to Post 6S 8E
+Vehicle 7: 13:54 Drive 8 minutes
+Vehicle 2: 13:54 Start Route to Post 6N 2E
+Vehicle 2: 13:54 Drive 9 minutes
+Vehicle 3: 13:54 Start Route to Post 6N 8E
+Vehicle 3: 13:54 Drive 3 minutes
+Vehicle 3: 13:57 Arrive at Post 6N 8E
+Vehicle 6: 13:58 Arrive at Post 7N 6W
+Vehicle 4: 13:59 Arrive at Post 6S 2E
+Vehicle 7: 14:02 Arrive at Post 6S 8E
+Vehicle 2: 14:03 Arrive at Post 6N 2E
+Vehicle 4: 14:40 Start Route to Job 4S
+Vehicle 4: 14:40 Drive 4 minutes
+Vehicle 7: 14:40 Start Route to Post 7S 6E
+Vehicle 7: 14:40 Drive 3 minutes
+Vehicle 3: 14:40 Start Route to Post 6E
+Vehicle 3: 14:40 Drive 8 minutes
+Vehicle 2: 14:40 Start Route to Post 7N 6E
+Vehicle 2: 14:40 Drive 5 minutes
+Vehicle 7: 14:43 Arrive at Post 7S 6E
+Vehicle 2: 14:45 Arrive at Post 7N 6E
+Vehicle 4: 14:44 Arrive at Job 4S
+Vehicle 4: 14:44 Start Job
+Vehicle 3: 14:48 Arrive at Post 6E
+Vehicle 4: 15:02 Finish Job
+Vehicle 4: 15:02 Start Route to Post 6S 2E
+Vehicle 4: 15:02 Drive 4 minutes
+Vehicle 7: 15:02 Start Route to Post 6S 8E
+Vehicle 7: 15:02 Drive 3 minutes
+Vehicle 2: 15:02 Start Route to Post 6N 2E
+Vehicle 2: 15:02 Drive 5 minutes
+Vehicle 3: 15:02 Start Route to Post 6N 8E
+Vehicle 3: 15:02 Drive 8 minutes
+Vehicle 7: 15:05 Arrive at Post 6S 8E
+Vehicle 4: 15:06 Arrive at Post 6S 2E
+Vehicle 2: 15:07 Arrive at Post 6N 2E
+Vehicle 3: 15:10 Arrive at Post 6N 8E
+Vehicle 3: 15:20 Start Route to Job 10E
+Vehicle 3: 15:20 Drive 8 minutes
+Vehicle 4: 15:20 Start Route to Post 7S 6E
+Vehicle 4: 15:20 Drive 5 minutes
+Vehicle 7: 15:20 Start Route to Post 6E
+Vehicle 7: 15:20 Drive 8 minutes
+Vehicle 2: 15:20 Start Route to Post 7N 6E
+Vehicle 2: 15:20 Drive 5 minutes
+Vehicle 2: 15:25 Arrive at Post 7N 6E
+Vehicle 4: 15:25 Arrive at Post 7S 6E
+Vehicle 7: 15:28 Arrive at Post 6E
+Vehicle 3: 15:28 Arrive at Job 10E
+Vehicle 3: 15:28 Start Job
+Vehicle 3: 15:53 Finish Job
+Vehicle 4: 15:53 Start Route to Post 6S 2E
+Vehicle 4: 15:53 Drive 5 minutes
+Vehicle 3: 15:53 Start Route to Post 6S 8E
+Vehicle 3: 15:53 Drive 8 minutes
+Vehicle 2: 15:53 Start Route to Post 6N 2E
+Vehicle 2: 15:53 Drive 5 minutes
+Vehicle 7: 15:53 Start Route to Post 6N 8E
+Vehicle 7: 15:53 Drive 8 minutes
+Vehicle 2: 15:58 Arrive at Post 6N 2E
+Vehicle 4: 15:58 Arrive at Post 6S 2E
+Vehicle 3: 16:01 Arrive at Post 6S 8E
+Vehicle 7: 16:01 Arrive at Post 6N 8E
+Vehicle 7: 16:55 Start Route to Job 3N 6E
+Vehicle 7: 16:55 Drive 5 minutes
+Vehicle 4: 16:55 Start Route to Post 7S 6E
+Vehicle 4: 16:55 Drive 5 minutes
+Vehicle 3: 16:55 Start Route to Post 6E
+Vehicle 3: 16:55 Drive 8 minutes
+Vehicle 2: 16:55 Start Route to Post 7N 6E
+Vehicle 2: 16:55 Drive 5 minutes
+Vehicle 2: 17:00 Arrive at Post 7N 6E
+Vehicle 4: 17:00 Arrive at Post 7S 6E
+Vehicle 7: 17:00 Arrive at Job 3N 6E
+Vehicle 7: 17:00 Start Job
+Vehicle 3: 17:03 Arrive at Post 6E
+Vehicle 7: 17:20 Finish Job
+Vehicle 4: 17:20 Start Route to Post 6S 2E
+Vehicle 4: 17:20 Drive 5 minutes
+Vehicle 3: 17:20 Start Route to Post 6S 8E
+Vehicle 3: 17:20 Drive 8 minutes
+Vehicle 2: 17:20 Start Route to Post 6N 2E
+Vehicle 2: 17:20 Drive 5 minutes
+Vehicle 7: 17:20 Start Route to Post 6N 8E
+Vehicle 7: 17:20 Drive 5 minutes
+Vehicle 2: 17:25 Arrive at Post 6N 2E
+Vehicle 4: 17:25 Arrive at Post 6S 2E
+Vehicle 7: 17:25 Arrive at Post 6N 8E
+Vehicle 3: 17:28 Arrive at Post 6S 8E
+Vehicle 1: 17:30 Start Route to Job 12S 4W
+Vehicle 1: 17:30 Drive 7 minutes
+Vehicle 4: 17:30 Start Route to Post 8S 6W
+Vehicle 4: 17:30 Drive 10 minutes
+Vehicle 6: 17:30 Start Route to Post 8N 6W
+Vehicle 6: 17:30 Drive 1 minutes
+Vehicle 3: 17:30 Start Route to Post 8S 6E
+Vehicle 3: 17:30 Drive 4 minutes
+Vehicle 2: 17:30 Start Route to Post 6E
+Vehicle 2: 17:30 Drive 10 minutes
+Vehicle 7: 17:30 Start Route to Post 8N 6E
+Vehicle 7: 17:30 Drive 4 minutes
+Vehicle 6: 17:31 Arrive at Post 8N 6W
+Vehicle 3: 17:34 Arrive at Post 8S 6E
+Vehicle 7: 17:34 Arrive at Post 8N 6E
+Vehicle 1: 17:37 Arrive at Job 12S 4W
+Vehicle 1: 17:37 Start Job
+Vehicle 2: 17:40 Arrive at Post 6E
+Vehicle 4: 17:40 Arrive at Post 8S 6W
+Vehicle 2: 17:40 Start Route to Job 2S 3E
+Vehicle 2: 17:40 Drive 5 minutes
+Vehicle 4: 17:40 Start Route to Post 6S 7W
+Vehicle 4: 17:40 Drive 3 minutes
+Vehicle 6: 17:40 Start Route to Post 6N 7W
+Vehicle 6: 17:40 Drive 3 minutes
+Vehicle 3: 17:40 Start Route to Post 8S 5E
+Vehicle 3: 17:40 Drive 1 minutes
+Vehicle 5: 17:40 Start Route to Post 5E
+Vehicle 5: 17:40 Drive 11 minutes
+Vehicle 7: 17:40 Start Route to Post 8N 5E
+Vehicle 7: 17:40 Drive 1 minutes
+Vehicle 3: 17:41 Arrive at Post 8S 5E
+Vehicle 7: 17:41 Arrive at Post 8N 5E
+Vehicle 4: 17:43 Arrive at Post 6S 7W
+Vehicle 6: 17:43 Arrive at Post 6N 7W
+Vehicle 2: 17:45 Arrive at Job 2S 3E
+Vehicle 2: 17:45 Start Job
+Vehicle 5: 17:51 Arrive at Post 5E
+Vehicle 2: 18:00 Finish Job
+Vehicle 4: 18:00 Start Route to Post 8S 6W
+Vehicle 4: 18:00 Drive 3 minutes
+Vehicle 2: 18:00 Start Route to Post 6W
+Vehicle 2: 18:00 Drive 11 minutes
+Vehicle 6: 18:00 Start Route to Post 8N 6W
+Vehicle 6: 18:00 Drive 3 minutes
+Vehicle 3: 18:00 Start Route to Post 8S 6E
+Vehicle 3: 18:00 Drive 1 minutes
+Vehicle 5: 18:00 Start Route to Post 6E
+Vehicle 5: 18:00 Drive 1 minutes
+Vehicle 7: 18:00 Start Route to Post 8N 6E
+Vehicle 7: 18:00 Drive 1 minutes
+Vehicle 3: 18:01 Arrive at Post 8S 6E
+Vehicle 5: 18:01 Arrive at Post 6E
+Vehicle 7: 18:01 Arrive at Post 8N 6E
+Vehicle 4: 18:03 Arrive at Post 8S 6W
+Vehicle 6: 18:03 Arrive at Post 8N 6W
+Vehicle 2: 18:11 Arrive at Post 6W
+Vehicle 1: 18:12 Finish Job
+Vehicle 1: 18:12 Start Route to Post 8S 7W
+Vehicle 1: 18:12 Drive 7 minutes
+Vehicle 2: 18:12 Start Route to Post 7W
+Vehicle 2: 18:12 Drive 1 minutes
+Vehicle 6: 18:12 Start Route to Post 8N 7W
+Vehicle 6: 18:12 Drive 1 minutes
+Vehicle 4: 18:12 Start Route to Post 6S 2E
+Vehicle 4: 18:12 Drive 10 minutes
+Vehicle 3: 18:12 Start Route to Post 6S 9E
+Vehicle 3: 18:12 Drive 5 minutes
+Vehicle 5: 18:12 Start Route to Post 6N 2E
+Vehicle 5: 18:12 Drive 10 minutes
+Vehicle 7: 18:12 Start Route to Post 6N 9E
+Vehicle 7: 18:12 Drive 5 minutes
+Vehicle 2: 18:13 Arrive at Post 7W
+Vehicle 6: 18:13 Arrive at Post 8N 7W
+Vehicle 3: 18:17 Arrive at Post 6S 9E
+Vehicle 7: 18:17 Arrive at Post 6N 9E
+Vehicle 1: 18:19 Arrive at Post 8S 7W
+Vehicle 4: 18:22 Arrive at Post 6S 2E
+Vehicle 5: 18:22 Arrive at Post 6N 2E
+Vehicle 6: 18:25 Start Route to Job 6N 11W
+Vehicle 6: 18:25 Drive 6 minutes
+Vehicle 1: 18:25 Start Route to Post 8S 6W
+Vehicle 1: 18:25 Drive 1 minutes
+Vehicle 2: 18:25 Start Route to Post 6W
+Vehicle 2: 18:25 Drive 1 minutes
+Vehicle 5: 18:25 Start Route to Post 8N 6W
+Vehicle 5: 18:25 Drive 10 minutes
+Vehicle 3: 18:25 Start Route to Post 8S 6E
+Vehicle 3: 18:25 Drive 5 minutes
+Vehicle 4: 18:25 Start Route to Post 6E
+Vehicle 4: 18:25 Drive 10 minutes
+Vehicle 7: 18:25 Start Route to Post 8N 6E
+Vehicle 7: 18:25 Drive 5 minutes
+Vehicle 1: 18:26 Arrive at Post 8S 6W
+Vehicle 2: 18:26 Arrive at Post 6W
+Vehicle 3: 18:30 Arrive at Post 8S 6E
+Vehicle 7: 18:30 Arrive at Post 8N 6E
+Vehicle 6: 18:31 Arrive at Job 6N 11W
+Vehicle 6: 18:31 Start Job
+Vehicle 4: 18:35 Arrive at Post 6E
+Vehicle 5: 18:35 Arrive at Post 8N 6W
+Vehicle 6: 19:01 Finish Job
+Vehicle 1: 19:01 Start Route to Post 8S 7W
+Vehicle 1: 19:01 Drive 1 minutes
+Vehicle 2: 19:01 Start Route to Post 7W
+Vehicle 2: 19:01 Drive 1 minutes
+Vehicle 6: 19:01 Start Route to Post 8N 7W
+Vehicle 6: 19:01 Drive 6 minutes
+Vehicle 3: 19:01 Start Route to Post 6S 2E
+Vehicle 3: 19:01 Drive 6 minutes
+Vehicle 4: 19:01 Start Route to Post 6S 9E
+Vehicle 4: 19:01 Drive 9 minutes
+Vehicle 5: 19:01 Start Route to Post 6N 2E
+Vehicle 5: 19:01 Drive 10 minutes
+Vehicle 7: 19:01 Start Route to Post 6N 9E
+Vehicle 7: 19:01 Drive 5 minutes
+Vehicle 1: 19:02 Arrive at Post 8S 7W
+Vehicle 2: 19:02 Arrive at Post 7W
+Vehicle 7: 19:06 Arrive at Post 6N 9E
+Vehicle 3: 19:07 Arrive at Post 6S 2E
+Vehicle 6: 19:07 Arrive at Post 8N 7W
+Vehicle 4: 19:10 Arrive at Post 6S 9E
+Vehicle 5: 19:11 Arrive at Post 6N 2E
+Vehicle 5: 19:50 Start Route to Job 9N 1E
+Vehicle 5: 19:50 Drive 4 minutes
+Vehicle 1: 19:50 Start Route to Post 8S 6W
+Vehicle 1: 19:50 Drive 1 minutes
+Vehicle 2: 19:50 Start Route to Post 6W
+Vehicle 2: 19:50 Drive 1 minutes
+Vehicle 6: 19:50 Start Route to Post 8N 6W
+Vehicle 6: 19:50 Drive 1 minutes
+Vehicle 3: 19:50 Start Route to Post 8S 6E
+Vehicle 3: 19:50 Drive 6 minutes
+Vehicle 4: 19:50 Start Route to Post 6E
+Vehicle 4: 19:50 Drive 9 minutes
+Vehicle 7: 19:50 Start Route to Post 8N 6E
+Vehicle 7: 19:50 Drive 5 minutes
+Vehicle 1: 19:51 Arrive at Post 8S 6W
+Vehicle 2: 19:51 Arrive at Post 6W
+Vehicle 6: 19:51 Arrive at Post 8N 6W
+Vehicle 5: 19:54 Arrive at Job 9N 1E
+Vehicle 5: 19:54 Start Job
+Vehicle 7: 19:55 Arrive at Post 8N 6E
+Vehicle 3: 19:56 Arrive at Post 8S 6E
+Vehicle 4: 19:59 Arrive at Post 6E
+Vehicle 5: 20:14 Finish Job
+Vehicle 1: 20:14 Start Route to Post 8S 7W
+Vehicle 1: 20:14 Drive 1 minutes
+Vehicle 2: 20:14 Start Route to Post 7W
+Vehicle 2: 20:14 Drive 1 minutes
+Vehicle 6: 20:14 Start Route to Post 8N 7W
+Vehicle 6: 20:14 Drive 1 minutes
+Vehicle 3: 20:14 Start Route to Post 6S 2E
+Vehicle 3: 20:14 Drive 6 minutes
+Vehicle 4: 20:14 Start Route to Post 6S 9E
+Vehicle 4: 20:14 Drive 9 minutes
+Vehicle 5: 20:14 Start Route to Post 6N 2E
+Vehicle 5: 20:14 Drive 4 minutes
+Vehicle 7: 20:14 Start Route to Post 6N 9E
+Vehicle 7: 20:14 Drive 5 minutes
+Vehicle 1: 20:15 Arrive at Post 8S 7W
+Vehicle 2: 20:15 Arrive at Post 7W
+Vehicle 6: 20:15 Arrive at Post 8N 7W
+Vehicle 5: 20:18 Arrive at Post 6N 2E
+Vehicle 7: 20:19 Arrive at Post 6N 9E
+Vehicle 3: 20:20 Arrive at Post 6S 2E
+Vehicle 4: 20:23 Arrive at Post 6S 9E
+Vehicle 1: 21:30 Start Route to Job 5S 8W
+Vehicle 1: 21:30 Drive 4 minutes
+Vehicle 3: 21:30 Start Route to Post 8S 6W
+Vehicle 3: 21:30 Drive 10 minutes
+Vehicle 2: 21:30 Start Route to Post 6W
+Vehicle 2: 21:30 Drive 1 minutes
+Vehicle 6: 21:30 Start Route to Post 8N 6W
+Vehicle 6: 21:30 Drive 1 minutes
+Vehicle 4: 21:30 Start Route to Post 8S 6E
+Vehicle 4: 21:30 Drive 5 minutes
+Vehicle 5: 21:30 Start Route to Post 6E
+Vehicle 5: 21:30 Drive 10 minutes
+Vehicle 7: 21:30 Start Route to Post 8N 6E
+Vehicle 7: 21:30 Drive 5 minutes
+Vehicle 2: 21:31 Arrive at Post 6W
+Vehicle 6: 21:31 Arrive at Post 8N 6W
+Vehicle 1: 21:34 Arrive at Job 5S 8W
+Vehicle 1: 21:34 Start Job
+Vehicle 4: 21:35 Arrive at Post 8S 6E
+Vehicle 7: 21:35 Arrive at Post 8N 6E
+Vehicle 3: 21:40 Arrive at Post 8S 6W
+Vehicle 5: 21:40 Arrive at Post 6E
+Vehicle 1: 22:14 Finish Job
+Vehicle 1: 22:14 Start Route to Post 8S 7W
+Vehicle 1: 22:14 Drive 4 minutes
+Vehicle 2: 22:14 Start Route to Post 7W
+Vehicle 2: 22:14 Drive 1 minutes
+Vehicle 6: 22:14 Start Route to Post 8N 7W
+Vehicle 6: 22:14 Drive 1 minutes
+Vehicle 3: 22:14 Start Route to Post 6S 2E
+Vehicle 3: 22:14 Drive 10 minutes
+Vehicle 4: 22:14 Start Route to Post 6S 9E
+Vehicle 4: 22:14 Drive 5 minutes
+Vehicle 5: 22:14 Start Route to Post 6N 2E
+Vehicle 5: 22:14 Drive 10 minutes
+Vehicle 7: 22:14 Start Route to Post 6N 9E
+Vehicle 7: 22:14 Drive 5 minutes
+Vehicle 2: 22:15 Arrive at Post 7W
+Vehicle 6: 22:15 Arrive at Post 8N 7W
+Vehicle 1: 22:18 Arrive at Post 8S 7W
+Vehicle 4: 22:19 Arrive at Post 6S 9E
+Vehicle 7: 22:19 Arrive at Post 6N 9E
+Vehicle 3: 22:24 Arrive at Post 6S 2E
+Vehicle 5: 22:24 Arrive at Post 6N 2E
+Vehicle 7: 23:10 Start Route to Job 7N 7E
+Vehicle 7: 23:10 Drive 3 minutes
+Vehicle 1: 23:10 Start Route to Post 8S 6W
+Vehicle 1: 23:10 Drive 1 minutes
+Vehicle 2: 23:10 Start Route to Post 6W
+Vehicle 2: 23:10 Drive 1 minutes
+Vehicle 6: 23:10 Start Route to Post 8N 6W
+Vehicle 6: 23:10 Drive 1 minutes
+Vehicle 3: 23:10 Start Route to Post 8S 6E
+Vehicle 3: 23:10 Drive 6 minutes
+Vehicle 4: 23:10 Start Route to Post 6E
+Vehicle 4: 23:10 Drive 9 minutes
+Vehicle 5: 23:10 Start Route to Post 8N 6E
+Vehicle 5: 23:10 Drive 6 minutes
+Vehicle 1: 23:11 Arrive at Post 8S 6W
+Vehicle 2: 23:11 Arrive at Post 6W
+Vehicle 6: 23:11 Arrive at Post 8N 6W
+Vehicle 7: 23:13 Arrive at Job 7N 7E
+Vehicle 7: 23:13 Start Job
+Vehicle 3: 23:16 Arrive at Post 8S 6E
+Vehicle 5: 23:16 Arrive at Post 8N 6E
+Vehicle 4: 23:19 Arrive at Post 6E
+Vehicle 7: 23:38 Finish Job

@@ -1,0 +1,25 @@
+UVEC 2026 Programming Stream
+Brought to you by: VIKELABS X ECSS
+October 25th, 2026
+
+Situation
+
+You are tasked with designing and building an optimization and scheduling tool for a fleet of emergency vehicles. The underlying architecture and implementation details are up to you and your team. That said, your software must parse the incoming incident data, account for spatial constraints (such as directional coordinates and transit times between jobs or returning to base), and produce the most efficient daily schedule possible across the entire fleet. We emphasize the importance of scheduling correctness and efficiency in your end implementation.
+
+An example minimal deliverable would be a program that reads a formatted schedule of calls and outputs an optimal assignment of tasks for each vehicle, alongside a brief presentation (e.g., a slide deck) explaining your approach, algorithm design, and key architectural choices.
+
+The input is provided via a text file structured as follows:
+
+2
+10:45 15 N 20 W 45
+11:00 2 S 3 E 30
+16:02 4 E 15
+
+You can imagine the city being a perfect grid, where emergency vehicles can only travel in straight vertical or horizontal lines, and each intersection is 1 minute of travel time. In this format, the first line specifies the number of available emergency vehicles for the day. Each subsequent line represents an incident call throughout the day, defined by four parameters:
+
+The hour the call arrives (in a 24-hour format),
+The number of intersections North or South (Determined by following N or S)
+The number of intersections East or West (Determined by following E or W)
+The time (in minutes) the job takes once you get there
+
+*Note that as seen above, not all jobs have 2 directions, some are just N/S or E/W
