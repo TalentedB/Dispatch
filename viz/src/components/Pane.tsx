@@ -5,6 +5,7 @@ import { algorithmMeta } from '@/algorithms/registry'
 import { prepare, sampleFrame } from '@/engine/sample'
 import { CALL_STATUS } from '@/engine/status'
 import { OVERLAYS } from '@/overlays/registry'
+import { coverageRadius, coveredShare } from '@/overlays/zones'
 import { supports } from '@/overlays/types'
 import { clock, formatMinutes } from '@/playback/clock'
 import { VIEWS, viewById } from '@/views/registry'
@@ -158,6 +159,7 @@ function PaneBody({ trace, state, options, accent }: { trace: Trace; state: Pane
   const View = viewById(state.view).component
   const s = frame.stats
   const total = trace.calls.length
+  const zones = state.overlays.has('zones') && viewById(state.view).slot === 'map2d'
   return (
     <>
       <div className="relative min-h-0 flex-1">
@@ -169,6 +171,11 @@ function PaneBody({ trace, state, options, accent }: { trace: Trace; state: Pane
         <Stat label="on scene" value={s.onScene} color={CALL_STATUS.on_scene.color} />
         <Stat label="resolved" value={`${s.done}/${total}`} color={CALL_STATUS.done.color} />
         <span className="flex-1" />
+        {zones && (
+          <span title={`Share of the area within ${coverageRadius(prepared.bounds, trace.vehicles.length)} min of a vehicle`}>
+            <Stat label="covered" value={`${Math.round(coveredShare(prepared.bounds, frame) * 100)}%`} color="var(--color-muted)" />
+          </span>
+        )}
         <Stat label="busy" value={`${s.busy}/${trace.vehicles.length}`} color="var(--color-muted)" />
         <Stat label="avg response" value={s.avgResponse === null ? '–' : formatMinutes(s.avgResponse)} color={accent} />
       </div>
