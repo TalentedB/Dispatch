@@ -83,7 +83,9 @@ def main():
         default=CoverageConfig().availability_interval,
         help="simulation minutes between busy-availability coverage refreshes (default: 10)",
     )
-    argument_parser.add_argument("--min-coverage-improvement", type=float, default=0.5)
+    argument_parser.add_argument(
+        "--min-coverage-improvement", type=float, default=CoverageConfig().min_improvement
+    )
     argument_parser.add_argument(
         "--start-time", type=int, default=0, help="absolute minutes; staging begins here"
     )

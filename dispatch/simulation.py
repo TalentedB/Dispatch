@@ -364,7 +364,17 @@ class _Simulation:
         if fleet_signature == self.last_coverage_signature and not availability_refresh_due:
             return
         earliest_rebalance = self.last_coverage_time + self.config.coverage.cooldown
-        if self.current_time < earliest_rebalance and not availability_refresh_due:
+        free_fleet_changed = (
+            self.last_coverage_signature is not None
+            and fleet_signature[0] != self.last_coverage_signature[0]
+        )
+        # A dispatch or completion changes which vehicles can cover the city.
+        # Cooldown only suppresses refinements while that free fleet is unchanged.
+        if (
+            self.current_time < earliest_rebalance
+            and not availability_refresh_due
+            and not free_fleet_changed
+        ):
             self.schedule_coverage_refresh(earliest_rebalance)
             return
         self.last_coverage_signature, self.last_coverage_time = fleet_signature, self.current_time

@@ -311,3 +311,40 @@ def test_exhausted_run_budget_skips_coverage_but_keeps_reported_map():
     assert result.metrics()["coverage_skipped_budget"] > 0
     assert result.map_history[-1] == {"time": 1, "bounds": (-20, 20, -20, 20)}
     assert check(n, calls, result.output, allow_reposition=True).valid
+
+
+def test_job_completion_rebalances_newly_free_fleet_without_cooldown_wait():
+    n, calls = parse_input("2\n10:45 15 N 20 W 45\n11:00 2 S 3 E 30\n")
+    result = simulate(n, calls, SimulationConfig())
+    completion = result.emergencies[0].completion
+    assert any(plan.time == completion for plan in result.coverage)
+    assert {m.vehicle for m in result.movements
+            if m.kind == Status.REPOSITIONING and m.start == completion} == {0, 1}
+    assert check(n, calls, result.output, allow_reposition=True).valid
+
+
+def test_lone_free_vehicle_moves_to_center_when_busy_partner_cannot_cover_far_corners():
+    plan = plan_coverage(
+        {1: Point(3, -2)},
+        CoverageConfig(bounds=(-20, 20, -20, 20)),
+        busy_anchors=[Anchor(0, Point(-20, 15), 723)],
+        now=695,
+    )
+    assert plan.improved
+    assert plan.targets == {1: BASE}
+    assert plan.radius == 40
+
+
+def test_default_simulation_recenters_free_vehicle_while_partner_is_still_servicing():
+    n, calls = parse_input("2\n10:45 15 N 20 W 45\n11:00 2 S 3 E 30\n")
+    result = simulate(n, calls, SimulationConfig())
+    busy_job, finished_job = result.emergencies.values()
+    assert finished_job.completion < busy_job.completion
+    assert any(
+        movement.vehicle == finished_job.vehicle
+        and movement.kind == Status.REPOSITIONING
+        and movement.start == finished_job.completion
+        and movement.destination == BASE
+        for movement in result.movements
+    )
+    assert check(n, calls, result.output, allow_reposition=True).valid

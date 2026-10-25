@@ -5,7 +5,7 @@ import { algorithmMeta } from '@/algorithms/registry'
 import { prepare, sampleFrame } from '@/engine/sample'
 import { CALL_STATUS } from '@/engine/status'
 import { OVERLAYS } from '@/overlays/registry'
-import { coverageRadius, coveredShare } from '@/overlays/zones'
+import { coverageRadius, coveredShare } from '@/engine/coverage'
 import { supports } from '@/overlays/types'
 import { clock, formatMinutes } from '@/playback/clock'
 import { VIEWS, viewById } from '@/views/registry'
@@ -172,7 +172,7 @@ function PaneBody({ trace, state, options, accent }: { trace: Trace; state: Pane
         <Stat label="resolved" value={`${s.done}/${total}`} color={CALL_STATUS.done.color} />
         <span className="flex-1" />
         {zones && (
-          <span title={`Share of the area within ${coverageRadius(frame.bounds, trace.vehicles.length)} min of a vehicle`}>
+          <span title={`Share of the area reachable within ${coverageRadius(frame.bounds, trace.vehicles.length)} min, including remaining emergency work and travel`}>
             <Stat label="covered" value={`${Math.round(coveredShare(frame.bounds, frame) * 100)}%`} color="var(--color-muted)" />
           </span>
         )}
