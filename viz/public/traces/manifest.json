@@ -177,6 +177,19 @@
    }
   },
   {
+   "id": "input_abdullah",
+   "label": "input abdullah",
+   "group": "generated",
+   "vehicles": 2,
+   "calls": 3,
+   "traces": {
+    "greedy": "input_abdullah/greedy.json",
+    "closest_idle": "input_abdullah/closest_idle.json",
+    "nearest_neighbor": "input_abdullah/nearest_neighbor.json",
+    "hungarian": "input_abdullah/hungarian.json"
+   }
+  },
+  {
    "id": "light_day_1",
    "label": "light day 1",
    "group": "generated",
