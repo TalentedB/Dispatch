@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Ambulance, Columns2, Maximize2, Minimize2, PanelRight, Square, Upload } from 'lucide-react'
+import { Ambulance, Columns2, Maximize2, Minimize2, PanelRight, Square, Trophy, Upload } from 'lucide-react'
 import { DEFAULT_OVERLAYS } from '@/overlays/registry'
 import { addTraceFiles, dataStore, loadManifest, useScenarioTraces, useScenarios, useTrace } from '@/data/traces'
 import { clockActions, useClockDriver } from '@/playback/clock'
 import { Pane, type PaneState } from '@/components/Pane'
 import { Transport } from '@/components/Transport'
 import { Inspector } from '@/components/Inspector'
+import { Leaderboard } from '@/components/Leaderboard'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -153,6 +154,7 @@ export default function App() {
           </div>
           <div className="header-actions">
             {notice && <span role="status" className="upload-notice">{notice}</span>}
+            <Leaderboard scenarios={scenarios} trigger={<Button variant="ghost" size="sm"><Trophy /> Leaderboard</Button>} />
             <Button variant="outline" size="sm" onClick={() => toggleDemo(true)}>
               <Maximize2 /> Demo
             </Button>
@@ -211,6 +213,7 @@ export default function App() {
             <Ambulance aria-hidden="true" className="size-4" />
             <span className="demo-brand">Dispatch</span>
             {scenarioSelect}
+            <Leaderboard scenarios={scenarios} trigger={<Button variant="ghost" size="icon-sm" aria-label="Leaderboard"><Trophy /></Button>} />
             <Button variant="ghost" size="sm" onClick={() => toggleDemo(false)} aria-label="Exit demo mode">
               <Minimize2 /> Exit
             </Button>
