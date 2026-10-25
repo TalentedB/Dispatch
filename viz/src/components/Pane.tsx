@@ -10,7 +10,6 @@ import { clock, formatMinutes } from '@/playback/clock'
 import { VIEWS, viewById } from '@/views/registry'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -41,15 +40,14 @@ export function Pane({ state, onChange, algorithms, trace, error }: Props) {
   const uid = useId()
 
   return (
-    <Card className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden py-0">
-      <div className="flex flex-wrap items-center gap-2 border-b bg-zinc-950/60 px-3 py-2 backdrop-blur">
-        <span className="size-2.5 shrink-0 rounded-full shadow-[0_0_10px] shadow-current" style={{ background: meta.color, color: meta.color }} />
+    <section className="simulation-pane" aria-label={`${meta.label} simulation`}>
+      <div className="pane-toolbar">
         <Select
           value={state.algorithm}
           onValueChange={(v) => onChange({ algorithm: v })}
           items={Object.fromEntries(algorithms.map((a) => [a, algorithmMeta(a).label]))}
         >
-          <SelectTrigger size="sm" className="min-w-44 font-medium">
+          <SelectTrigger size="sm" className="algorithm-select" aria-label="Algorithm">
             <SelectValue placeholder="Algorithm" />
           </SelectTrigger>
           <SelectContent>
@@ -57,7 +55,6 @@ export function Pane({ state, onChange, algorithms, trace, error }: Props) {
               const m = algorithmMeta(a)
               return (
                 <SelectItem key={a} value={a}>
-                  <span className="size-2 rounded-full" style={{ background: m.color }} />
                   {m.label}
                 </SelectItem>
               )
@@ -65,11 +62,11 @@ export function Pane({ state, onChange, algorithms, trace, error }: Props) {
           </SelectContent>
         </Select>
 
-        <ToggleGroup value={[view.id]} onValueChange={(v) => v[0] && onChange({ view: v[0] as string })} variant="outline" size="sm" spacing={0}>
+        <ToggleGroup className="view-switcher segmented" value={[view.id]} onValueChange={(v) => v[0] && onChange({ view: v[0] as string })} variant="default" size="sm" spacing={0}>
           {VIEWS.map((v) => (
             <Tooltip key={v.id}>
               <TooltipTrigger render={<ToggleGroupItem value={v.id} aria-label={v.label} />}>
-                <v.icon />
+                <v.icon /><span className="view-label">{v.label}</span>
               </TooltipTrigger>
               <TooltipContent>{v.label}</TooltipContent>
             </Tooltip>
@@ -92,13 +89,13 @@ export function Pane({ state, onChange, algorithms, trace, error }: Props) {
         <Popover>
           <PopoverTrigger render={<Button variant="outline" size="sm" />}>
             <Layers /> Layers
-            <Badge variant="secondary" className="ml-0.5 h-4 px-1.5 text-[10px]">
+            <Badge variant="secondary" className="ml-0.5 h-4 px-1.5 text-xs">
               {available.filter((o) => state.overlays.has(o.id)).length}
             </Badge>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-80">
             <PopoverHeader>
-              <PopoverTitle>Overlays · {view.label}</PopoverTitle>
+              <PopoverTitle>{view.label} layers</PopoverTitle>
               <PopoverDescription>Toggle information layers for this pane.</PopoverDescription>
             </PopoverHeader>
             <div className="flex flex-col gap-3">
@@ -128,7 +125,7 @@ export function Pane({ state, onChange, algorithms, trace, error }: Props) {
             <Tooltip>
               <TooltipTrigger render={<span />}>
                 {trace.check.valid ? (
-                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400"><CheckCircle2 /> valid</Badge>
+                  <Badge variant="outline" className="valid-badge"><CheckCircle2 /> Valid schedule</Badge>
                 ) : (
                   <Badge variant="destructive"><AlertTriangle /> {trace.check.errors.length} errors</Badge>
                 )}
@@ -141,16 +138,16 @@ export function Pane({ state, onChange, algorithms, trace, error }: Props) {
         </div>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 flex-col bg-[radial-gradient(ellipse_at_center,#18181b_0%,#09090b_70%)]">
+      <div className="pane-canvas">
         {trace ? (
           <PaneBody trace={trace} state={state} options={options} accent={meta.color} />
         ) : (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">
-            {error ? <span className="text-destructive">{error}</span> : <Loader2 className="animate-spin" />}
+            {error ? <span role="alert" className="text-destructive">{error}</span> : <span role="status" className="loading-state"><Loader2 className="animate-spin" /> Loading simulation…</span>}
           </div>
         )}
       </div>
-    </Card>
+    </section>
   )
 }
 
@@ -166,25 +163,24 @@ function PaneBody({ trace, state, options, accent }: { trace: Trace; state: Pane
       <div className="relative min-h-0 flex-1">
         <View prepared={prepared} frame={frame} overlays={state.overlays} options={options} accent={accent} />
       </div>
-      <div className="flex flex-wrap items-center gap-1.5 border-t bg-zinc-950/60 px-2 py-1.5">
+      <div className="pane-stats">
         <Stat label="waiting" value={s.waiting} color={CALL_STATUS.waiting.color} pulse={s.waiting > 0} />
         <Stat label="en route" value={s.enRoute} color={CALL_STATUS.dispatched.color} />
         <Stat label="on scene" value={s.onScene} color={CALL_STATUS.on_scene.color} />
         <Stat label="resolved" value={`${s.done}/${total}`} color={CALL_STATUS.done.color} />
         <span className="flex-1" />
-        <Stat label="busy" value={`${s.busy}/${trace.vehicles.length}`} color="#a1a1aa" />
+        <Stat label="busy" value={`${s.busy}/${trace.vehicles.length}`} color="var(--color-muted)" />
         <Stat label="avg response" value={s.avgResponse === null ? '–' : formatMinutes(s.avgResponse)} color={accent} />
       </div>
     </>
   )
 }
 
-function Stat({ label, value, color, pulse }: { label: string; value: string | number; color: string; pulse?: boolean }) {
+function Stat({ label, value }: { label: string; value: string | number; color: string; pulse?: boolean }) {
   return (
-    <div className="flex items-baseline gap-1.5 rounded-md border border-white/5 bg-zinc-900/60 px-2 py-0.5">
-      <span className={`size-1.5 self-center rounded-full ${pulse ? 'animate-pulse' : ''}`} style={{ background: color }} />
-      <span className="text-sm font-semibold tabular-nums" style={{ color }}>{value}</span>
-      <span className="text-[10px] tracking-wide text-zinc-500 uppercase">{label}</span>
+    <div className="pane-stat">
+      <span className="stat-value">{value}</span>
+      <span className="stat-label">{label}</span>
     </div>
   )
 }

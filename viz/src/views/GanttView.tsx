@@ -1,3 +1,4 @@
+import { themeColor } from '@/lib/theme'
 import { useRef, type PointerEvent } from 'react'
 import { GanttChart } from 'lucide-react'
 import { OVERLAYS } from '@/overlays/registry'
@@ -46,18 +47,18 @@ function Gantt({ prepared, frame, overlays }: ViewProps) {
   return (
     <div ref={ref} className="absolute inset-0 cursor-crosshair overflow-hidden" onPointerDown={seek} onPointerMove={seek}>
       {width > 0 && (
-        <svg width={width} height={height} className="block select-none">
+        <svg role="img" aria-label="Vehicle activity timeline and waiting call count" width={width} height={height} className="block select-none">
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={tx(t)} x2={tx(t)} y1={TOP - 4} y2={height} stroke="#27272a" />
-              <text x={tx(t)} y={14} textAnchor="middle" fontSize={10} fill="#71717a">{formatClock(t)}</text>
+              <line x1={tx(t)} x2={tx(t)} y1={TOP - 4} y2={height} stroke={themeColor('map-major')} />
+              <text x={tx(t)} y={14} textAnchor="middle" fontSize={10} fill={themeColor('map-muted')}>{formatClock(t)}</text>
             </g>
           ))}
           {vehicles.map((v) => (
             <g key={v.id}>
-              <rect x={GUTTER} y={laneY(v.id)} width={plotW} height={laneH} rx={4} fill="#18181b" />
+              <rect x={GUTTER} y={laneY(v.id)} width={plotW} height={laneH} rx={4} fill={themeColor('map-grid')} />
               <circle cx={14} cy={laneY(v.id) + laneH / 2} r={5} fill={vehicleColor(v.id)} />
-              <text x={24} y={laneY(v.id) + laneH / 2} dominantBaseline="central" fontSize={11} fill="#a1a1aa" fontWeight={600}>V{v.id}</text>
+              <text x={24} y={laneY(v.id) + laneH / 2} dominantBaseline="central" fontSize={11} fill={themeColor('map-muted')} fontWeight={600}>V{v.id}</text>
               {v.segments.map((s, i) => (
                 <rect key={i} x={tx(s.start)} y={laneY(v.id) + (s.kind === 'on_job' ? 0 : laneH * 0.2)}
                   width={Math.max(0.5, tx(s.end) - tx(s.start))} height={s.kind === 'on_job' ? laneH : laneH * 0.6}
@@ -67,13 +68,13 @@ function Gantt({ prepared, frame, overlays }: ViewProps) {
               ))}
             </g>
           ))}
-          <text x={8} y={waitTop + WAIT_LANE / 2} dominantBaseline="central" fontSize={10} fill="#71717a">waiting</text>
+          <text x={8} y={waitTop + WAIT_LANE / 2} dominantBaseline="central" fontSize={10} fill={themeColor('map-muted')}>waiting</text>
           <polyline points={`${tx(start)},${waitTop + WAIT_LANE} ${area} ${tx(end)},${waitTop + WAIT_LANE}`}
             fill={CALL_STATUS.waiting.color} fillOpacity={0.25} stroke={CALL_STATUS.waiting.color} strokeWidth={1} />
           {OVERLAYS.filter((o) => overlays.has(o.id) && o.render.gantt).map((o) => <g key={o.id}>{o.render.gantt!(ctx)}</g>)}
-          <line x1={tx(frame.t)} x2={tx(frame.t)} y1={TOP - 6} y2={height} stroke="#fafafa" strokeWidth={1.5} />
-          <rect x={tx(frame.t) - 26} y={2} width={52} height={16} rx={8} fill="#fafafa" />
-          <text x={tx(frame.t)} y={10} textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700} fill="#09090b">
+          <line x1={tx(frame.t)} x2={tx(frame.t)} y1={TOP - 6} y2={height} stroke={themeColor('map-ink')} strokeWidth={1.5} />
+          <rect x={tx(frame.t) - 26} y={2} width={52} height={16} rx={8} fill={themeColor('map-ink')} />
+          <text x={tx(frame.t)} y={10} textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700} fill={themeColor('map-paper')}>
             {formatClock(frame.t)}
           </text>
         </svg>

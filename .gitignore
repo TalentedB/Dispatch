@@ -3,3 +3,13 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 .bench_out/
+
+node_modules/
+viz/dist/
+*.tsbuildinfo
+.hallmark-tool/
+.hallmark/before/
+.hallmark/after/
+.hallmark/baseline/
+
+.pytest-ui-temp/

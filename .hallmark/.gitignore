@@ -1,0 +1,15 @@
+baseline/
+shots/
+before/
+after/
+preview/
+before.json
+before-original.json
+before.txt
+compare.html
+smoke.mjs
+smoke-trace.json
+smoke-failure.html
+review-capture.mjs
+targets.mjs
+baseline-capture.mjs

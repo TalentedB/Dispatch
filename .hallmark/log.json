@@ -1,0 +1,42 @@
+[
+  {
+    "mode": "redesign",
+    "depth": "full",
+    "scope": "app",
+    "shape": "app screen",
+    "theme": "coral",
+    "axes": "light/grotesk-sans/warm",
+    "hero": null,
+    "nav": "existing top bar",
+    "footer": "synchronized playback",
+    "imagery": "live solver traces",
+    "photos": [],
+    "entry": "viz/src/App.tsx",
+    "fingerprint": {
+      "shell": "top bar",
+      "lead": "map",
+      "secondary": "inspector",
+      "transport": "persistent"
+    },
+    "sections": [
+      "scenario",
+      "simulation panes",
+      "inspector",
+      "transport"
+    ],
+    "signature": "fleet grid and synchronized timeline",
+    "waived": [],
+    "prompt": "Redesign the entire dispatch visualization UI with Hallmark into a clean minimal interface.",
+    "verification": {
+      "floor": 0,
+      "reflex": 0,
+      "warnings": 0,
+      "dismissed": 2,
+      "browser_checks": 14,
+      "contract_tests": 172,
+      "typecheck": "pass",
+      "build": "pass",
+      "finish_review": "independent subagent, 2 findings resolved; phone targets measured at 44x44"
+    }
+  }
+]

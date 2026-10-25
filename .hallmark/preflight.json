@@ -1,0 +1,7 @@
+{
+ "scanned":"2026-10-25",
+ "findings":{"fonts":"Geist Variable (viz/src/index.css:4), retained for the existing app", "palette":"Default shadcn tokens and dark zinc surfaces (viz/src/index.css:56, viz/src/App.tsx:103)", "framework":"React 19, Vite 8, Tailwind 4, shadcn/Base UI (viz/package.json:15)", "contract":"uvec.trace/v1, grid blocks, minutes since midnight (viz/src/contract/trace.ts:17)"},
+ "preserve":["all handlers and routes", "algorithm, view and overlay registries", "trace validation and sampling", "Geist font"],
+ "introduce":["Coral light app surfaces", "flat map workbench", "readable metrics and transport", "responsive comparison"],
+ "material":{"real":"competition specifications, checked solver traces, existing metrics", "pictures":"the running application", "absent":"invented metrics, photos and endorsements"}
+}

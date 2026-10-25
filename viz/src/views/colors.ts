@@ -1,10 +1,11 @@
-/** Drive-time colour ramp: 0 = right next to a vehicle (teal), 1+ = far away (magenta). */
+import { themeColor } from '@/lib/theme'
+/** Drive-time colour ramp: 0 = near a vehicle (sage), 1+ = far away (clay). */
+const rgb = (role: string): [number, number, number] => {
+  const hex = themeColor(role).slice(1)
+  return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number]
+}
 const STOPS: [number, [number, number, number]][] = [
-  [0, [20, 184, 166]],
-  [0.25, [132, 204, 22]],
-  [0.5, [250, 204, 21]],
-  [0.75, [249, 115, 22]],
-  [1, [225, 29, 72]],
+  [0, rgb('coverage-near')], [0.5, rgb('coverage-mid')], [1, rgb('coverage-far')],
 ]
 
 export function distanceColor(f: number): [number, number, number] {

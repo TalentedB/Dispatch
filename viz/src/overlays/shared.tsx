@@ -1,3 +1,4 @@
+import { themeColor } from '@/lib/theme'
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Line } from '@react-three/drei'
@@ -14,9 +15,9 @@ export function Pill({
   return (
     <g transform={`translate(${x}, ${y + dy * px})`} style={{ pointerEvents: 'none' }}>
       <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={h / 2}
-        fill={solid ? color : 'rgba(9, 9, 11, 0.85)'} stroke={color} strokeWidth={px} />
+        fill={solid ? color : themeColor('label-paper')} stroke={color} strokeWidth={px} />
       <text textAnchor="middle" dominantBaseline="central" fontSize={fs} fontWeight={600}
-        fill={solid ? '#09090b' : color} style={{ fontVariantNumeric: 'tabular-nums' }}>
+        fill={solid ? themeColor('map-paper') : color} style={{ fontVariantNumeric: 'tabular-nums' }}>
         {text}
       </text>
     </g>
@@ -58,14 +59,14 @@ function labelTexture(text: string, color: string) {
   if (hit) return hit
   const c = document.createElement('canvas')
   const g = c.getContext('2d')!
-  const font = '600 21px Geist Variable, ui-sans-serif, system-ui, sans-serif'
+  const font = `600 21px ${getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim()}`
   g.font = font
   const w = Math.ceil(g.measureText(text).width) + 26
   const h = 34
   c.width = w
   c.height = h
   g.font = font
-  g.fillStyle = 'rgba(9, 9, 11, 0.88)'
+  g.fillStyle = themeColor('label-paper')
   g.strokeStyle = color
   g.lineWidth = 2
   g.beginPath()

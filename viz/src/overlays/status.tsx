@@ -1,3 +1,4 @@
+import { themeColor } from '@/lib/theme'
 import { Activity } from 'lucide-react'
 import { VEHICLE_STATUS } from '@/engine/status'
 import { Label3D, Pill, world } from './shared'
@@ -41,7 +42,7 @@ export const statusOverlay: OverlayPlugin = {
           .filter((s) => s.callId !== undefined && s.kind === 'on_job' && tx(s.end) - tx(s.start) > 18)
           .map((s, i) => (
             <text key={`${v.id}-${i}`} x={(tx(s.start) + tx(s.end)) / 2} y={laneY(v.id) + laneH / 2}
-              textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700} fill="#09090b"
+              textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700} fill={themeColor('map-paper')}
               style={{ pointerEvents: 'none' }}>
               #{s.callId}
             </text>

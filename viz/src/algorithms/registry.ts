@@ -1,3 +1,4 @@
+import { themeColor } from '@/lib/theme'
 /**
  * Display metadata for algorithms. Optional: an algorithm with no entry here still
  * works (it gets its id as a label and a generated colour). Add an entry when you
@@ -17,25 +18,25 @@ const KNOWN: Record<string, Omit<AlgorithmMeta, 'id'>> = {
     label: 'Greedy earliest arrival',
     short: 'Greedy',
     description: 'Each call goes to the vehicle that can arrive soonest, including busy ones (the job is chained).',
-    color: '#f59e0b',
+    color: themeColor('series-1'),
   },
   closest_idle: {
     label: 'Closest idle, FCFS',
     short: 'Closest idle',
     description: 'Nearest free vehicle. If none is free, calls wait and are served oldest-first.',
-    color: '#38bdf8',
+    color: themeColor('series-2'),
   },
   nearest_neighbor: {
     label: 'Nearest neighbour',
     short: 'Nearest nbr',
     description: 'Nearest free vehicle. A vehicle that frees up takes the closest waiting call.',
-    color: '#34d399',
+    color: themeColor('series-3'),
   },
   hungarian: {
     label: 'Hungarian matching',
     short: 'Hungarian',
     description: 'Free vehicles and waiting calls are matched to minimise total distance (Kuhn-Munkres).',
-    color: '#c084fc',
+    color: themeColor('series-4'),
   },
 }
 
@@ -49,7 +50,7 @@ export function registerAlgorithm(id: string, meta: { label?: string; descriptio
 function hashColor(id: string): string {
   let h = 0
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return `hsl(${h % 360} 75% 62%)`
+  return themeColor(`series-${(h % 6) + 1}`)
 }
 
 export function algorithmMeta(id: string, fromTrace?: { label?: string; description?: string }): AlgorithmMeta {

@@ -1,0 +1,19 @@
+{
+  "passed": [
+    "Playback advances and pauses",
+    "Jump and minute step controls",
+    "Keyboard navigation",
+    "Timeline seeks",
+    "Speed selection",
+    "Algorithm selection",
+    "Layer switches",
+    "Timeline view",
+    "Isometric 3D view",
+    "Side-by-side synchronized panes",
+    "Inspector log and legend",
+    "No horizontal overflow from 320 to 1920px",
+    "Mobile inspector opens and closes",
+    "Trace upload uses the existing contract"
+  ],
+  "errors": []
+}

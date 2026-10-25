@@ -5,7 +5,8 @@ day, play at any speed, switch algorithms, and run two side by side.
 
 ```bash
 cd viz
-npm install
+# Node 22.12+ (Node 24 was used to verify the redesign).
+npm ci
 npm run traces     # runs every solver in ../solvers.txt on every input -> public/traces/
 npm run dev        # http://localhost:5173
 ```
@@ -122,3 +123,28 @@ shadcn/ui components (MIT, copied into `src/components/ui/`), Base UI (MIT),
 class-variance-authority (Apache-2.0), cn (MIT), tw-animate-css (MIT), three.js (MIT),
 @react-three/fiber (MIT), @react-three/drei (MIT), lucide-react icons (ISC),
 Geist font via @fontsource-variable/geist (OFL-1.1).
+
+## UI design
+
+The isolated redesign branch is `codex/ui-redesign`. The interface uses the
+Hallmark Coral palette as a restrained light workbench, with the existing locally
+bundled Geist font. `src/tokens.css` contains the shared surface, type, spacing,
+semantic state and series colors. `src/lib/theme.ts` resolves those tokens for
+canvas and WebGL, so 2D, terrain and chart paint share the same source.
+
+The map, view controls and playback lead the screen. The inspector uses ruled
+metric sections rather than nested cards. On narrow screens it opens over the
+workspace and can be closed with the Inspector button; playback remains visible.
+The simulation controls and the trace, view and overlay contracts remain in their
+existing modules. A scalar scrubber now renders one thumb, and global playback
+shortcuts yield to focused inputs, buttons and menus.
+
+All statistics come from the checked traces. There are no invented metrics or
+external photo assets. Data color identifies algorithms, vehicles and states;
+interface color stays neutral. Decorative halos and pulses were removed, and
+reduced-motion preferences disable UI animation.
+
+For visual changes, run `npm run build` and `npm run lint`. The redesign was also
+checked with browser interactions for uploads, algorithms, layers, playback,
+top-down, 3D, Gantt, split panes, inspector tabs and widths from 320 to 1920px.
+The existing solver, checker and trace-export tests remain unchanged.

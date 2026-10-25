@@ -1,3 +1,4 @@
+import { themeColor } from '@/lib/theme'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
@@ -30,9 +31,9 @@ function gridTexture() {
   const c = document.createElement('canvas')
   c.width = c.height = 64
   const g = c.getContext('2d')!
-  g.fillStyle = '#ffffff'
+  g.fillStyle = themeColor('map-mark')
   g.fillRect(0, 0, 64, 64)
-  g.fillStyle = '#3f3f46'
+  g.fillStyle = themeColor('map-axis')
   g.fillRect(0, 0, 64, 3)
   g.fillRect(0, 0, 3, 64)
   const t = new THREE.CanvasTexture(c)
@@ -88,8 +89,8 @@ function CallPillar({ c, heightAt, k, vehicles }: {
 }) {
   const mat = useRef<THREE.MeshStandardMaterial>(null)
   const color = CALL_STATUS[c.status].color
-  useFrame(({ clock }) => {
-    if (mat.current) mat.current.emissiveIntensity = c.status === 'waiting' ? 0.6 + 0.6 * Math.sin(clock.elapsedTime * 6) : 0.5
+  useFrame(() => {
+    if (mat.current) mat.current.emissiveIntensity = 0.3
   })
   const base = heightAt(c.call.x, c.call.y)
   if (c.status === 'done') {
@@ -122,10 +123,10 @@ function CallPillar({ c, heightAt, k, vehicles }: {
 
 function Vehicle({ v, heightAt }: { v: VehicleFrame; heightAt: (x: number, y: number) => number }) {
   const light = useRef<THREE.MeshStandardMaterial>(null)
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (!light.current) return
-    const on = v.status === 'to_job' && Math.floor(clock.elapsedTime * 4) % 2 === 0
-    light.current.emissive.set(v.status === 'to_job' ? (on ? '#ef4444' : '#3b82f6') : '#52525b')
+    const on = v.status === 'to_job'
+    light.current.emissive.set(v.status === 'to_job' ? (on ? themeColor('state-scene') : themeColor('state-return')) : themeColor('state-idle'))
   })
   const y = heightAt(v.x, v.y)
   const color = vehicleColor(v.id)
@@ -137,7 +138,7 @@ function Vehicle({ v, heightAt }: { v: VehicleFrame; heightAt: (x: number, y: nu
       </mesh>
       <mesh position={[0, 0.35, 0]}>
         <boxGeometry args={[0.4, 0.2, 0.25]} />
-        <meshStandardMaterial ref={light} color="#18181b" emissiveIntensity={2} />
+        <meshStandardMaterial ref={light} color={themeColor('map-grid')} emissiveIntensity={2} />
       </mesh>
     </group>
   )
@@ -151,8 +152,8 @@ function FitCamera({ prepared }: { prepared: Prepared }) {
     const cx = (minX + maxX) / 2
     const cz = -(minY + maxY) / 2
     camera.position.set(cx + span, span * 0.95, cz + span)
-    camera.lookAt(cx, 0, cz)
-    camera.zoom = Math.min(size.width, size.height) / (span * 1.25)
+    camera.lookAt(cx, 2, cz)
+    camera.zoom = Math.min(size.width, size.height) / (span * 1.55)
     camera.updateProjectionMatrix()
     // Only refit when the scenario changes, so user zoom/rotation survives playback.
   }, [minX, maxX, minY, maxY])
@@ -169,39 +170,39 @@ function Isometric({ prepared, frame, overlays, options }: ViewProps) {
   return (
     <div className="absolute inset-0">
       <Canvas orthographic dpr={[1, 2]} camera={{ near: -1000, far: 1000, position: [50, 50, 50] }}>
-        <color attach="background" args={['#09090b']} />
-        <fog attach="fog" args={['#09090b', 200, 400]} />
+        <color attach="background" args={[themeColor('map-paper')]} />
+        <fog attach="fog" args={[themeColor('map-paper'), 200, 400]} />
         <FitCamera prepared={prepared} />
         <ambientLight intensity={0.55} />
-        <hemisphereLight args={['#bae6fd', '#18181b', 0.5]} />
+        <hemisphereLight args={[themeColor('map-light'), themeColor('map-grid'), 0.5]} />
         <directionalLight position={[30, 60, 20]} intensity={1.6} />
         <Terrain prepared={prepared} distAt={distAt} heightAt={heightAt} range={range} />
         <group position={[0, heightAt(0, 0), 0]}>
           <mesh position={[0, 0.6, 0]}>
             <boxGeometry args={[1.4, 1.2, 1.4]} />
-            <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={0.6} />
+            <meshStandardMaterial color={themeColor('map-base')} emissive={themeColor('map-base')} emissiveIntensity={0.6} />
           </mesh>
           <mesh position={[0, 1.25, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[0.9, 0.25]} />
-            <meshBasicMaterial color="#fff" />
+            <meshBasicMaterial color={themeColor('map-mark')} />
           </mesh>
           <mesh position={[0, 1.251, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
             <planeGeometry args={[0.9, 0.25]} />
-            <meshBasicMaterial color="#fff" />
+            <meshBasicMaterial color={themeColor('map-mark')} />
           </mesh>
-          <pointLight color="#38bdf8" intensity={30} distance={12} position={[0, 2, 0]} />
+          <pointLight color={themeColor('state-return')} intensity={30} distance={12} position={[0, 2, 0]} />
         </group>
         {frame.calls.filter((c) => c.status !== 'future').map((c) => (
           <CallPillar key={c.call.id} c={c} heightAt={heightAt} k={k} vehicles={frame.vehicles} />
         ))}
         {frame.vehicles.map((v) => <Vehicle key={v.id} v={v} heightAt={heightAt} />)}
         {active.map((o) => <group key={o.id}>{o.render.map3d!(ctx)}</group>)}
-        <OrbitControls makeDefault target={[(minX + maxX) / 2, 0, -(minY + maxY) / 2]} enableDamping maxPolarAngle={Math.PI / 2.1} />
+        <OrbitControls makeDefault target={[(minX + maxX) / 2, 2, -(minY + maxY) / 2]} enableDamping maxPolarAngle={Math.PI / 2.1} />
       </Canvas>
-      <div className="pointer-events-none absolute bottom-2 left-2 flex items-center gap-2 text-[10px] text-zinc-500">
+      <div className="pointer-events-none absolute bottom-2 left-2 flex items-center gap-2 text-xs text-muted-foreground">
         <span>terrain height &amp; colour = drive time to nearest {field === 'free' ? 'free ' : ''}vehicle</span>
-        <span className="h-1.5 w-20 rounded-full" style={{ background: 'linear-gradient(90deg,#14b8a6,#84cc16,#facc15,#f97316,#e11d48)' }} />
-        <span>· pillar = distance to responder · drag to orbit</span>
+        <span className="h-1.5 w-20 rounded-full" style={{ background: 'var(--coverage-ramp)' }} />
+        <span>Pillar: distance to responder. Drag to orbit.</span>
       </div>
     </div>
   )

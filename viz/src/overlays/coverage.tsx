@@ -32,7 +32,7 @@ function CoverageLayer({ prepared, frame, sy }: Map2DContext) {
   }, [frame, w, h, minX, maxY])
   return (
     <foreignObject x={minX - 0.5} y={sy(maxY) - 0.5} width={w} height={h} style={{ pointerEvents: 'none' }}>
-      <canvas ref={ref} width={w} height={h} style={{ width: '100%', height: '100%', display: 'block' }} />
+      <canvas aria-hidden="true" ref={ref} width={w} height={h} style={{ width: '100%', height: '100%', display: 'block' }} />
     </foreignObject>
   )
 }

@@ -15,7 +15,7 @@ function Sparklines({ traces, span }: { traces: Trace[]; span: { start: number; 
   const x = (t: number) => ((t - span.start) / (span.end - span.start)) * W
   const calls = traces[0]?.calls ?? []
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 bottom-3 h-9 w-full">
+    <svg aria-hidden="true" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 bottom-3 h-9 w-full">
       {traces.map((tr) => {
         const p = prepare(tr)
         const max = Math.max(1, tr.vehicles.length)
@@ -43,25 +43,25 @@ export function Transport({ traces }: { traces: Trace[] }) {
   )
 
   return (
-    <div className="flex items-center gap-3 border-t bg-zinc-950/80 px-4 py-2 backdrop-blur">
-      <div className="flex items-center gap-0.5">
+    <footer className="transport" aria-label="Playback controls">
+      <div className="transport-buttons">
         {iconBtn('Jump to start', () => clockActions.seek(span.start), <ChevronFirst />, 'Home')}
         {iconBtn('Back 1 min', () => clockActions.step(-1), <StepBack />, '← (⇧ 10)')}
-        <Button size="icon" className="mx-1 rounded-full" onClick={clockActions.toggle} aria-label={playing ? 'Pause' : 'Play'}>
+        <Button size="icon" className="play-button" onClick={clockActions.toggle} aria-label={playing ? 'Pause' : 'Play'}>
           {playing ? <Pause className="fill-current" /> : <Play className="fill-current" />}
         </Button>
         {iconBtn('Forward 1 min', () => clockActions.step(1), <StepForward />, '→ (⇧ 10)')}
         {iconBtn('Jump to end', () => clockActions.seek(span.end), <ChevronLast />, 'End')}
       </div>
 
-      <div className="w-28 text-center font-mono text-2xl font-semibold tracking-tight tabular-nums">{formatClock(time)}</div>
+      <div className="transport-clock"><span>{formatClock(time)}</span><span className="clock-caption">Simulation time</span></div>
 
-      <div className="relative flex h-12 flex-1 items-center">
+      <div className="timeline-track">
         <Sparklines traces={traces} span={span} />
         <Slider className="relative z-10 -mt-7" min={span.start} max={span.end} step={0.25} value={time}
-          onValueChange={(v) => clockActions.seek(v as number)} aria-label="Timeline" />
-        <span className="absolute bottom-0 left-0 text-[10px] text-zinc-500">{formatClock(span.start)}</span>
-        <span className="absolute right-0 bottom-0 text-[10px] text-zinc-500">{formatClock(span.end)}</span>
+          onValueChange={(v) => clockActions.seek(Array.isArray(v) ? v[0] : v)} aria-label="Timeline" />
+        <span className="absolute bottom-0 left-0 text-xs text-muted-foreground">{formatClock(span.start)}</span>
+        <span className="absolute right-0 bottom-0 text-xs text-muted-foreground">{formatClock(span.end)}</span>
       </div>
 
       <Select value={String(speed)} onValueChange={(v) => v && clockActions.setSpeed(Number(v))}
@@ -73,6 +73,6 @@ export function Transport({ traces }: { traces: Trace[] }) {
           {SPEEDS.map((s) => <SelectItem key={s} value={String(s)}>{s} min/s</SelectItem>)}
         </SelectContent>
       </Select>
-    </div>
+    </footer>
   )
 }
