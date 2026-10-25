@@ -51,13 +51,18 @@ once, requests `--trace` for `python -m dispatch` commands, and retains legacy
 text replay for all other commands. The default process timeout is 20 seconds.
 The app remains a playback frontend; Python/HiGHS run during trace generation.
 
-Coverage is availability-aware. The 3D terrain and coverage heatmap use remaining
+Coverage is availability-aware. The 3D terrain, coverage heatmap, green coverage
+zones and covered percentage use remaining
 busy minutes plus Manhattan travel from where an ambulance becomes free. Native
 readiness snapshots include currently reported queued work and are sampled only
 at or before playback time. Legacy traces, without queue history, use the current
 locked job's remaining travel/service. The terrain's free-only option includes
 interruptible repositioning and return travel. Physical vehicle markers always
 stay on their actual routes; projected readiness never teleports a vehicle.
+For a response threshold of `R` minutes and remaining busy time `Z`, a busy
+vehicle's coverage diamond is centered on its ready location with radius `R - Z`.
+It covers no intersections while `Z > R`, and grows one block per minute as work
+finishes. The percentage counts grid intersections using that same response rule.
 The deployment planner refreshes these forecasts while jobs are in progress,
 checks more closely near readiness, and moves only uncommitted, unqueued vehicles.
 

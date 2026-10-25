@@ -24,7 +24,7 @@ class CoverageConfig:
     objective: str = "center"
     relocation_weight: float = 0.1
     deployment_weight: float = 0.05
-    min_improvement: float = 0.5
+    min_improvement: float = 0.0
     cooldown: int = 10
     time_limit: float = 15.0  # Legacy option: zero disables coverage planning.
     max_candidates: int = 225

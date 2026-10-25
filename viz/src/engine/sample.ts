@@ -289,11 +289,18 @@ export function nearestDistance(x: number, y: number, points: XY[]): number {
 export function nearestResponseTime(x: number, y: number, vehicles: VehicleFrame[]): number {
   let best = Infinity
   for (const vehicle of vehicles) {
-    const committed = vehicle.status === 'to_job' || vehicle.status === 'on_job'
-    const readyX = vehicle.readyPosition?.[0] ?? (committed && vehicle.call ? vehicle.call.x : vehicle.x)
-    const readyY = vehicle.readyPosition?.[1] ?? (committed && vehicle.call ? vehicle.call.y : vehicle.y)
-    const busyMinutes = Math.max(0, vehicle.busyMinutes ?? (committed ? vehicle.minutesToComplete ?? 0 : 0))
-    best = Math.min(best, busyMinutes + Math.abs(x - readyX) + Math.abs(y - readyY))
+    const ready = responseReadiness(vehicle)
+    best = Math.min(best, ready.waitMinutes + Math.abs(x - ready.x) + Math.abs(y - ready.y))
   }
   return best
+}
+
+/** Resting movement is interruptible; emergency travel and service must finish first. */
+export function responseReadiness(vehicle: VehicleFrame): { x: number; y: number; waitMinutes: number } {
+  const committed = vehicle.status === 'to_job' || vehicle.status === 'on_job'
+  return {
+    x: vehicle.readyPosition?.[0] ?? (committed && vehicle.call ? vehicle.call.x : vehicle.x),
+    y: vehicle.readyPosition?.[1] ?? (committed && vehicle.call ? vehicle.call.y : vehicle.y),
+    waitMinutes: Math.max(0, vehicle.busyMinutes ?? (committed ? vehicle.minutesToComplete ?? 0 : 0)),
+  }
 }

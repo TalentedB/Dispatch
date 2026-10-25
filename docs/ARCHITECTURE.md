@@ -393,7 +393,10 @@ Euclidean geometry. Minimize worst estimated response (center), or mean response
 (median), plus relocation_weight times
 actual remaining relocation travel and deployment_weight times vehicles moved.
 Compare with continuing existing targets; move only when the score improvement
-exceeds min_improvement. Cooldown coalesces map changes and target refinements. Timed checks
+exceeds min_improvement (default zero). Relocation and deployment penalties already
+charge for movement; the default accepts any net improvement rather than imposing
+a second threshold that can suppress useful short moves. A positive threshold
+remains configurable. Cooldown coalesces map changes and target refinements. Timed checks
 refresh availability at most every `availability_interval` simulation minutes
 (default 10), halving the remaining gap down to one minute near the next readiness
 time. Dispatches and completions that change the free fleet trigger an immediate
