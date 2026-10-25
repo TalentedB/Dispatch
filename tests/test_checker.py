@@ -222,3 +222,30 @@ Vehicle 0: 10:02 Drive 1 minutes south
 Vehicle 0: 10:30 Start route to job
 """
     assert_invalid(run_check("1\n10:00 1 N 1\n10:30 1 N 1\n", out), "should have printed 'Arrive at base'")
+
+
+def test_redirect_with_two_calls_fitting_the_same_drive():
+    # 6 min into the drive home from 12 S 12 W, "10 N 11 E" reaches 4 N 1 W (N/S-first route)
+    # but would also reach 3 E from another point on a shortest path. The job length
+    # printed later (20 min) shows which call it was.
+    inp = "1\n08:00 12 S 12 W 2\n08:20 0 N 3 E 28\n08:30 4 N 1 W 20\n"
+    out = """\
+Vehicle 0: 08:00 Start route to job
+Vehicle 0: 08:00 Drive 12 minutes south and 12 minutes west
+Vehicle 0: 08:24 Start job
+Vehicle 0: 08:26 Finish job
+Vehicle 0: 08:26 Start route to base
+Vehicle 0: 08:26 Drive 12 minutes north and 12 minutes east
+Vehicle 0: 08:32 Start route to job
+Vehicle 0: 08:32 Drive 10 minutes north and 11 minutes east
+Vehicle 0: 08:53 Start job
+Vehicle 0: 09:13 Finish job
+Vehicle 0: 09:13 Start route to job
+Vehicle 0: 09:13 Drive 4 minutes south and 4 minutes east
+Vehicle 0: 09:21 Start job
+Vehicle 0: 09:49 Finish job
+Vehicle 0: 09:49 Start route to base
+Vehicle 0: 09:49 Drive 3 minutes west
+Vehicle 0: 09:52 Arrive at base
+"""
+    assert run_check(inp, out).errors == []

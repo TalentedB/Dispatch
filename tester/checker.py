@@ -133,6 +133,36 @@ def parse_output(text: str, errors: list[str]) -> list[Event]:
     return events
 
 
+def _along(start: Point, elapsed: int, ns_first: bool) -> Point:
+    """Position after `elapsed` minutes driving from start toward base, one axis at a time."""
+    x, y = start.x, start.y
+    for axis in (("y", "x") if ns_first else ("x", "y")):
+        value = y if axis == "y" else x
+        step = min(abs(value), elapsed)
+        elapsed -= step
+        value -= step if value > 0 else -step
+        if axis == "y":
+            y = value
+        else:
+            x = value
+    return Point(x, y)
+
+
+def _upcoming_job_length(events: list[Event], start_index: int, vehicle: int) -> int | None:
+    """Length of the job this vehicle does after the route starting at start_index, if printed."""
+    started = None
+    for e in events[start_index + 1:]:
+        if e.vehicle != vehicle:
+            continue
+        if e.action == "start job":
+            started = e.time
+        elif e.action == "finish job" and started is not None:
+            return e.time - started
+        elif e.action.startswith("start route"):
+            return None
+    return None
+
+
 @dataclass
 class _Vehicle:
     mode: str = "base"  # base | to_job | on_job | done_at_job | to_base | broken
@@ -174,29 +204,38 @@ def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
             # Redirected on the way home: it can be anywhere on a shortest path to base.
             elapsed, total = t - v.since, manhattan(v.pos, BASE)
             return_from = v.pos
+            usual = [_along(return_from, elapsed, ns_first=True), _along(return_from, elapsed, ns_first=False)]
 
             def possible(p: Point) -> bool:
                 return manhattan(return_from, p) == elapsed and manhattan(p, BASE) == total - elapsed
             where = f"{elapsed} min into its drive home from {fmt_point(return_from)}"
         else:
             here = v.pos
+            usual = [here]
 
             def possible(p: Point) -> bool:
                 return p == here
             where = f"at {fmt_point(here)}"
 
-        match = too_early = None
-        for c in open_calls:
-            if possible(Point(c.location.x - delta.x, c.location.y - delta.y)):
-                if c.time <= t:
-                    match = c
-                    break
-                too_early = too_early or c
-        if match is None:
-            if too_early:
-                return fail(start, f"leaves for call #{too_early.index} at {fmt_time(t)} but the call "
-                                   f"only comes in at {fmt_time(too_early.time)}", v)
+        def origin(c: Call) -> Point:
+            return Point(c.location.x - delta.x, c.location.y - delta.y)
+
+        candidates = [c for c in open_calls if possible(origin(c))]
+        ready = [c for c in candidates if c.time <= t]
+        if not ready:
+            if candidates:
+                return fail(start, f"leaves for call #{candidates[0].index} at {fmt_time(t)} but the call "
+                                   f"only comes in at {fmt_time(candidates[0].time)}", v)
             return fail(start, f"vehicle is {where}; driving {fmt_drive(delta)} doesn't reach any open call", v)
+
+        # Several calls can fit the same drive (e.g. two places reachable from different
+        # points on the way home). Use the job length printed later to tell them apart,
+        # then prefer the usual N/S-first / E/W-first route, then the earliest call.
+        duration = _upcoming_job_length(events, index_of[id(start)], start.vehicle)
+        if duration is not None and any(c.duration == duration for c in ready):
+            ready = [c for c in ready if c.duration == duration]
+        match = min(ready, key=lambda c: (usual.index(origin(c)) if origin(c) in usual else len(usual),
+                                          c.time, c.index))
 
         if v.mode == "to_base":
             total_drive += t - v.since
@@ -204,6 +243,7 @@ def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
         open_calls.remove(match)
         v.mode, v.call, v.since, v.due = "to_job", match, t, t + manhattan(BASE, delta)
 
+    index_of = {id(e): i for i, e in enumerate(events)}
     for e in events:
         if not 0 <= e.vehicle < num_vehicles:
             errors.append(f"output line {e.line_no}: vehicle {e.vehicle} doesn't exist "

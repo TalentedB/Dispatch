@@ -1,8 +1,8 @@
 # Solvers for bench.py, one per line:   name = command
 # {input} is replaced with the input file path (appended to the end if omitted).
 # Commands run from the repo root. Each must print its schedule to stdout.
-#
-# Examples:
-# greedy   = python3 solvers/greedy.py {input}
-# chaining = python3 solvers/chaining.py {input}
-# java_v1  = java -cp build Main {input}
+
+greedy           = python3 -m solver {input} --mode greedy
+closest_idle     = python3 -m solver {input} --mode closest_idle
+nearest_neighbor = python3 -m solver {input} --mode nearest_neighbor
+hungarian        = python3 -m solver {input} --mode hungarian

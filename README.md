@@ -1,11 +1,32 @@
-# UVec2026 — Solver Test Bench
+# UVec2026 — Emergency Vehicle Dispatcher
 
-A black-box tester for UVEC 2026 emergency-dispatch solvers. It runs any number
-of solver programs on a set of inputs, checks every output against the rules
-in the brief, scores it, and prints a comparison table. It contains no
-scheduling logic of its own.
+Requires Python 3.10+, standard library only (`pytest` for tests).
 
-Requires Python 3.10+, standard library only (`pytest` for the tester's own tests).
+## Solver
+
+```bash
+python3 -m solver inputs/brief_2_vehicles.txt                 # greedy (default)
+python3 -m solver inputs/brief_2_vehicles.txt --mode hungarian
+```
+
+| Mode | Algorithm |
+|---|---|
+| `greedy` | Vehicle that can arrive soonest, including busy ones (chains the job) |
+| `closest_idle` | Closest free vehicle (Manhattan); if none, calls wait and are served oldest-first |
+| `nearest_neighbor` | Closest free vehicle; a vehicle that frees up takes the closest waiting call |
+| `hungarian` | Free vehicles and waiting calls matched to minimise total distance (Kuhn-Munkres) |
+
+Design, research and measured results: [docs/approaches.md](docs/approaches.md).
+Compare modes on thousands of random scenarios: `python3 tools/stress.py`.
+
+---
+
+# Solver Test Bench
+
+A black-box tester for emergency-dispatch solvers. It runs any number of
+solver programs on a set of inputs, checks every output against the rules in
+the brief, scores it, and prints a comparison table. It shares no code with
+`solver/`, so it acts as an independent judge.
 
 ## Quick start
 
@@ -87,6 +108,9 @@ Add your own by dropping a `.txt` into `inputs/` (plus a `.expected` if you know
 | `tester/checker.py` | Replays and validates an output, computes metrics |
 | `tester/runner.py` | Runs solver commands (with timeout), compares to `.expected` |
 | `tools/generate_inputs.py` | Deterministic random input generator |
+| `tools/stress.py` | In-process comparison of solver modes on many random scenarios |
+| `solver/` | The dispatcher: `engine.py` (rules + simulation), `algorithms/` (one file per algorithm), `render.py` |
+| `docs/approaches.md` | The four algorithms, their sources, and results |
 | `tests/` | Tests for the tester itself (`python3 -m pytest`) |
 
 ## Third-party code
