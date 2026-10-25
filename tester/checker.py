@@ -30,6 +30,7 @@ _DRIVE = re.compile(
     r"drive (\d+) minutes? (north|south|east|west)(?: and (\d+) minutes? (north|south|east|west))?"
 )
 _ACTIONS = {"start route to job", "start route to base", "start job", "finish job", "arrive at base"}
+_COVERAGE_ACTIONS = {"start route to staging", "arrive at staging"}
 _STEP = {"north": (0, 1), "south": (0, -1), "east": (1, 0), "west": (-1, 0)}
 
 
@@ -114,7 +115,7 @@ def parse_output(text: str, errors: list[str]) -> list[Event]:
 
         vehicle = int(m[1])
         action = " ".join(m[3].lower().split())
-        if action in _ACTIONS:
+        if action in _ACTIONS | _COVERAGE_ACTIONS:
             events.append(Event(line_no, vehicle, t, action))
             continue
         d = _DRIVE.fullmatch(action)
@@ -172,12 +173,12 @@ class _Vehicle:
     call: Call | None = None
     pending: Event | None = None  # a 'Start route to ...' waiting for its Drive line
     jobs: int = 0
+    destination: Point = BASE  # optional staging route endpoint
 
 
-def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
+def check(num_vehicles: int, calls: list[Call], output: str, *, allow_reposition: bool = False) -> CheckResult:
     errors: list[str] = []
     events = parse_output(output, errors)
-
     vehicles: dict[int, _Vehicle] = {}
     open_calls = sorted(calls, key=lambda c: (c.time, c.index))
     started: dict[int, int] = {}  # call index -> time the job started
@@ -191,7 +192,31 @@ def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
 
     def finish_route(v: _Vehicle, start: Event, delta: Point) -> None:
         nonlocal total_drive
+        def staging_position() -> Point:
+            elapsed = start.time - v.since
+            dx, dy = v.destination.x - v.pos.x, v.destination.y - v.pos.y
+            xs = min(abs(dx), elapsed)
+            ys = min(abs(dy), max(0, elapsed - abs(dx)))
+            return Point(v.pos.x + (1 if dx >= 0 else -1) * xs,
+                         v.pos.y + (1 if dy >= 0 else -1) * ys)
+
+        if start.action == "start route to staging":
+            origin = v.pos
+            if v.mode == "to_staging":
+                origin = staging_position()
+                total_drive += start.time - v.since
+            elif v.mode == "to_base":
+                # Coverage is an opt-in extension with an explicit x-first route.
+                v.destination = BASE
+                origin = staging_position()
+                total_drive += start.time - v.since
+            v.pos, v.destination = origin, Point(origin.x + delta.x, origin.y + delta.y)
+            v.mode, v.since, v.due = "to_staging", start.time, start.time + manhattan(BASE, delta)
+            return
         if start.action == "start route to base":
+            if v.mode == "to_staging":
+                total_drive += start.time - v.since
+                v.pos = staging_position()
             home = Point(-v.pos.x, -v.pos.y)
             if delta != home:
                 return fail(start, f"route to base from {fmt_point(v.pos)} drives {fmt_drive(delta)}, "
@@ -200,7 +225,14 @@ def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
             return
 
         t = start.time
-        if v.mode == "to_base":
+        if v.mode == "to_staging":
+            here = staging_position()
+            usual = [here]
+
+            def possible(p: Point) -> bool:
+                return p == here
+            where = f"at {fmt_point(here)} during staging"
+        elif v.mode == "to_base":
             # Redirected on the way home: it can be anywhere on a shortest path to base.
             elapsed, total = t - v.since, manhattan(v.pos, BASE)
             return_from = v.pos
@@ -237,7 +269,7 @@ def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
         match = min(ready, key=lambda c: (usual.index(origin(c)) if origin(c) in usual else len(usual),
                                           c.time, c.index))
 
-        if v.mode == "to_base":
+        if v.mode in ("to_base", "to_staging"):
             total_drive += t - v.since
         total_drive += manhattan(BASE, delta)
         open_calls.remove(match)
@@ -252,6 +284,9 @@ def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
         v = vehicles.setdefault(e.vehicle, _Vehicle())
         if v.mode == "broken":
             continue
+        if e.action in _COVERAGE_ACTIONS and not allow_reposition:
+            fail(e, "staging output requires allow_reposition=True", v)
+            continue
         if v.pending and e.action != "drive":
             # 'Start route' with no Drive line: a zero-length trip.
             pending, v.pending = v.pending, None
@@ -263,13 +298,20 @@ def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
             if v.mode in ("to_job", "on_job"):
                 fail(e, f"starts a new route while still handling call #{v.call.index} "
                         "(vehicles can't switch jobs)", v)
-            elif v.mode == "to_base" and e.time >= v.due:
+            elif v.mode in ("to_base", "to_staging") and e.time >= v.due:
                 fail(e, f"should have printed 'Arrive at base' at {fmt_time(v.due)} first", v)
             else:
                 v.pending = e
         elif e.action == "start route to base":
-            if v.mode != "done_at_job":
+            if v.mode != "done_at_job" and not (allow_reposition and v.mode in ("staging", "to_staging")):
                 fail(e, "starts a route to base without having just finished a job", v)
+            else:
+                v.pending = e
+        elif e.action == "start route to staging":
+            if v.mode in ("to_job", "on_job"):
+                fail(e, "staging cannot override a committed job", v)
+            elif v.mode in ("to_staging", "to_base") and e.time >= v.due:
+                fail(e, "missing arrival before staging route", v)
             else:
                 v.pending = e
         elif e.action == "drive":
@@ -304,6 +346,13 @@ def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
                 total_drive += manhattan(v.pos, BASE)
                 last_return = max(last_return, e.time)
                 v.mode, v.pos, v.since = "base", BASE, e.time
+        elif e.action == "arrive at staging":
+            if v.mode != "to_staging" or e.time != v.due:
+                fail(e, "incorrect staging arrival time/state", v)
+            else:
+                total_drive += manhattan(v.pos, v.destination)
+                v.mode = "base" if v.destination == BASE else "staging"
+                v.pos, v.since = v.destination, e.time
 
     for vid, v in sorted(vehicles.items()):
         if v.pending:
@@ -314,6 +363,8 @@ def check(num_vehicles: int, calls: list[Call], output: str) -> CheckResult:
             "on_job": "never finishes its last job",
             "done_at_job": "never returns to base after its last job",
             "to_base": "never prints 'Arrive at base'",
+            "to_staging": "never finishes staging or returns to base",
+            "staging": "never returns to base from staging",
         }.get(v.mode)
         if problem:
             errors.append(f"vehicle {vid}: {problem}")

@@ -1,8 +1,10 @@
-# Solvers for bench.py, one per line:   name = command
-# {input} is replaced with the input file path (appended to the end if omitted).
-# Commands run from the repo root. Each must print its schedule to stdout.
-
+# Solvers for bench.py, one per line: name = command
+# {input} is replaced with the input path. Commands run from the repo root.
+# Strategy 4 uses staging; pass --allow-reposition when benchmarking it.
 greedy           = python3 -m solver {input} --mode greedy
 closest_idle     = python3 -m solver {input} --mode closest_idle
 nearest_neighbor = python3 -m solver {input} --mode nearest_neighbor
 hungarian        = python3 -m solver {input} --mode hungarian
+dispatch_greedy   = python -m dispatch {input} --scheduler greedy --no-staging
+milp             = python -m dispatch {input} --no-staging
+strategy4        = python -m dispatch {input}

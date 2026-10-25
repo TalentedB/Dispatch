@@ -42,6 +42,137 @@ solver programs on a set of inputs, checks every output against the rules in
 the brief, scores it, and prints a comparison table. It shares no code with
 `solver/`, so it acts as an independent judge.
 
+# UVec2026 — Emergency Dispatch and Solver Test Bench
+
+A black-box tester for UVEC 2026 emergency-dispatch solvers. It runs any number
+of solver programs on a set of inputs, checks every output against the rules
+in the brief, scores it, and prints a comparison table. The original tester is
+preserved; `dispatch/` now supplies MILP and greedy solvers through that same
+black-box interface.
+
+Requires Python 3.10+, standard library only (`pytest` for the tester's own tests).
+The optional scheduling package requires HiGHS; its pinned wheel is tested on
+Python 3.12 / Windows. See the install commands below for solver dependencies.
+
+## Run the scheduler
+
+Implementation proceeded after the requester confirmed authorization on
+2026-10-25. The competition brief images remain unchanged in `prompt/`.
+
+```bash
+python -m venv .venv
+# Windows PowerShell:
+.venv/Scripts/Activate.ps1
+# Linux/macOS: source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+python -m dispatch inputs/brief_small.txt
+python -m dispatch inputs/brief_2_vehicles.txt --mode offline --report result.json
+python -m dispatch inputs/brief_small.txt --scheduler greedy
+python -m pytest -q
+python bench.py --detail
+```
+
+Without activating the environment on Windows, replace `python` with
+`.venv/Scripts/python.exe`. Generic `python`/`python3` entries in `solvers.txt`
+use the benchmark's interpreter so dependencies remain in the same environment.
+
+Online mode is the default: only reported calls may enter an optimization.
+Strategy 4 is the application default for dispatch and deployment. Vehicles
+originate at `(0,0)` at simulation minute zero, physically drive to coverage
+positions, lock accepted jobs, chain queued work, and dynamically reposition
+when resting. Use `--no-staging` for legacy base deployment and idle returns.
+Offline mode knows future calls,
+but still waits until each report before departing toward that call; it may
+wait at a previous incident instead of returning between future assigned jobs.
+
+The default dispatch planner is a DP/MILP hybrid (`--scheduler milp` is retained
+for compatibility). Queues of at most seven known calls use exact subset DP;
+`--dp-limit 0` selects MILP only. Larger queues use actual HiGHS branch-and-cut.
+Both use the same lexicographic objectives: total response,
+worst response, travel, then vehicles deployed in the mutable plan. Defaults to
+a 20-second whole-run budget, with a configurable 30-second per-replan
+ceiling that is always limited by the remaining run allowance. Coverage uses deterministic grid calculations without a MILP deadline.
+An incident solve can finish sooner when its optimum is proven. Runtime remains measured separately and is not added
+to simulated emergency response. Diagnostics in
+`--report` distinguish proven primary/lexicographic optima, feasible incumbents,
+and validated retained/greedy fallback. Each plan reports its actual algorithm;
+DP results are never labeled as MILP solves. A time/work-limited DP does not
+claim optimality. Fallback reasons also go to stderr. Solver logs
+never enter schedule stdout. Model construction counts against the budget but
+can itself overrun a per-decision allowance; the benchmark enforces the external
+20-second deadline. The application uses a shared budget with startup/output
+reserves, queue-size DP allowances, and measured MILP construction costs. It
+skips construction when that cost cannot fit. Unused coverage budget can be
+spent on incident planning.
+
+Unchanged queued routes are retimed and reused. New reported calls are inserted
+into the previous feasible routes; that candidate is compared with fresh greedy
+output. The better validated plan supplies the fallback and MILP starting
+solution. HiGHS is seeded after objective setup so that setup cannot discard it.
+Accepted incident travel/service remain outside these mutable routes.
+
+## Strategy 4 coverage and redeployment
+
+```bash
+python -m dispatch inputs/brief_small.txt --staging --bounds -5 10 -5 10 --coverage-objective center --report staging.json
+python -m dispatch inputs/brief_small.txt --staging --coverage-objective median --relocation-weight 0.2
+python bench.py --solver "staged=python -m dispatch {input} --staging" --allow-reposition
+python check.py inputs/brief_small.txt .bench_out/staged/brief_small.out --allow-reposition
+python -m tools.benchmark_dispatch --output .bench_out/metrics.json
+python -m tools.benchmark_dispatch --inputs "inputs/*.txt" "inputs/generated/*.txt" --variants greedy,milp,strategy4,greedy-staged --workers 4 --output .bench_out/strategy4-shipped.json
+```
+
+Bounds describe the initially known staging/demand map; the default `(0,9,0,9)`
+is 100 intersections. Only reported calls expand those bounds, including negative
+coordinates. Future calls cannot resize the map, even in offline incident mode.
+Emergency coordinates are never clamped.
+Off-base staging is enabled for the requested Strategy 4. Select `--no-staging`
+when base deployment is required. Vehicles physically drive to sites starting at
+`--start-time` (default 0); calls can interrupt them en route.
+
+The adaptive grid planner balances worst nearest-vehicle travel time (or mean
+travel with median coverage) against relocation travel and movement count.
+It uses exact enumeration for tiny grids and deterministic placement improvements
+for larger ones, with cached distances and safe candidate pruning. The larger
+search has no global optimality claim. `--relocation-weight`,
+`--deployment-weight`, `--coverage-cooldown`, and `--min-coverage-improvement`
+control the tradeoff. The legacy `--coverage-time-limit` option accepts positive
+values for compatibility; zero disables coverage planning. All calls must occur
+at or after `--start-time`. JSON records map expansion history, planner status,
+nearest-target area percentages (ties shared equally), and whether demand was
+sampled on a large map. Percentages describe eventual targets, not current
+coverage while ambulances are moving.
+The dispatch coordinates `(X,Y,Z)` represent the location where a vehicle will
+become free and its remaining busy time in minutes. A free vehicle has `Z=0`
+at its actual position; a committed vehicle includes its remaining travel and
+service. MILP minimizes response time directly, counting waiting and Manhattan
+travel once. Z is not a Euclidean coordinate or a statistically normalized score.
+Expected locked arrivals do not trigger incident solves. On expected completion,
+the validated queued suffix is reused unless another free vehicle has moved.
+Reports, changed free positions, and relevant future-dispatch wakeups can replan.
+JSON metrics include incident solve and reused-plan counts.
+Coverage adds explicit `Start route to staging` / `Arrive at staging` actions;
+these require the checker/bench's opt-in flag. Ordinary output remains unchanged.
+The bench and diagnostic wrapper enforce a 20-second timeout per complete
+simulation by default. `--run-time-limit` controls the application budget and
+`--timeout` controls the benchmark process deadline. Startup/output reserves and
+shared incident/coverage allowances keep individual solves from consuming the
+entire run. When budget is exhausted, coverage holds existing targets and
+incident scheduling explicitly reports validated retained/greedy fallback. Diagnostic reports record
+the selected limits, runtime, proof flags, gaps, and fallback use after every run.
+The shipped-scenario correctness tests explicitly retain their original
+0.25-second budget; the quality benchmarks use the shared application budget.
+The diagnostic wrapper compares `greedy` and `milp` with base returns against
+`greedy-staged` and `strategy4` with identical dynamic coverage. It uses the
+application's default bounds unless explicitly overridden. `--workers` runs
+independent benchmark subprocesses concurrently; its default is one. Runtime
+remains diagnostic and never changes the response objective. `bench.py`'s
+registered legacy comparisons explicitly use `--no-staging`.
+
+See [the model and architecture](docs/ARCHITECTURE.md) for constraints,
+movement rules, objective bounds, failure handling, and limitations, and
+[measured benchmarks](docs/BENCHMARKS.md) for results and reproduction commands.
+
 ## Quick start
 
 1. Write a solver in any language. It takes an input file path as an argument and
@@ -128,6 +259,8 @@ Add your own by dropping a `.txt` into `inputs/` (plus a `.expected` if you know
 | `solver/` | The dispatcher: `engine.py` (rules + simulation), `algorithms/` (one file per algorithm), `render.py` |
 | `docs/approaches.md` | The four algorithms, their sources, and results |
 | `tests/` | Tests for the tester itself (`python3 -m pytest`) |
+| `dispatch/` | Subset DP, retained-plan/MILP planner, adaptive coverage, simulation and validation |
+| `tools/benchmark_dispatch.py` | Extended metrics through the existing benchmark runner |
 
 ## Third-party code
 
@@ -135,3 +268,11 @@ None in the solver or tester; they use only the Python standard library. Tests u
 The visualizer in `viz/` uses open-source npm packages (React, Vite, Tailwind CSS, shadcn/ui, Base UI,
 three.js, react-three-fiber, drei, lucide icons, Geist font), listed with licenses in
 [viz/README.md](viz/README.md#third-party-code).
+
+The original tester remains standard-library-only. The solver uses
+[HiGHS/highspy](https://highs.dev/) 1.15.1 (MIT) for MILP branch-and-cut,
+with NumPy (BSD-3-Clause) as its array dependency. Tests use
+[pytest](https://pytest.org) (MIT); `requirements-dev.txt` includes it.
+HiGHS's binary distribution contains its own third-party notices; retain those
+when distributing the solver. No proprietary optimizer or external service is
+required. The formulation, simulator, and benchmark extensions are local code.

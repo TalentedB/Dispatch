@@ -13,3 +13,5 @@ viz/dist/
 .hallmark/baseline/
 
 .pytest-ui-temp/
+
+.venv/

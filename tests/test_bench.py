@@ -34,3 +34,11 @@ def test_crash_and_timeout_are_reported():
     assert crashed.status == "CRASH" and "exploded" in crashed.detail
     hung = run_one("hang", f"{PY} {FIXTURES / 'hang.py'}", path, timeout=0.5)
     assert hung.status == "TIMEOUT"
+
+
+def test_generic_python_uses_the_bench_interpreter():
+    # The active virtualenv must also be used by solver subprocesses on Windows.
+    result = run_one("milp-smoke", "python -m dispatch {input} --time-limit 2 --no-staging --dp-limit 0",
+                     INPUTS / "brief_small.txt", timeout=10)
+    assert result.status == "ok", result.detail
+    assert result.matches_expected
