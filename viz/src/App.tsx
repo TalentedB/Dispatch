@@ -89,7 +89,10 @@ export default function App() {
     if (!scenario) return
     setPanes((ps) => {
       const algos = scenario.algorithms
-      const fixed = ps.map((p, i) => (p.algorithm && algos.includes(p.algorithm) ? p : { ...p, algorithm: algos[i % algos.length] ?? null }))
+      const defaults = algos.includes('strategy4')
+        ? ['strategy4', ...algos.filter((algorithm) => algorithm !== 'strategy4')]
+        : algos
+      const fixed = ps.map((p, i) => (p.algorithm && algos.includes(p.algorithm) ? p : { ...p, algorithm: defaults[i % defaults.length] ?? null }))
       return fixed.some((p, i) => p !== ps[i]) ? fixed : ps
     })
   }, [scenario])

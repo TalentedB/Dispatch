@@ -22,6 +22,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("input", type=Path, help="input file the solver was given")
     ap.add_argument("output", help="solver output file, or - for stdin")
+    ap.add_argument("--allow-reposition", action="store_true", help="validate optional staging events")
     args = ap.parse_args()
 
     try:
@@ -31,7 +32,7 @@ def main() -> int:
         print(f"error: {e}", file=sys.stderr)
         return 2
 
-    result = check(num_vehicles, calls, output)
+    result = check(num_vehicles, calls, output, allow_reposition=args.allow_reposition)
     if result.valid:
         print("VALID")
     else:

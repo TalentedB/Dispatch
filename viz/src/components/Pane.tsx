@@ -172,8 +172,8 @@ function PaneBody({ trace, state, options, accent }: { trace: Trace; state: Pane
         <Stat label="resolved" value={`${s.done}/${total}`} color={CALL_STATUS.done.color} />
         <span className="flex-1" />
         {zones && (
-          <span title={`Share of the area within ${coverageRadius(prepared.bounds, trace.vehicles.length)} min of a vehicle`}>
-            <Stat label="covered" value={`${Math.round(coveredShare(prepared.bounds, frame) * 100)}%`} color="var(--color-muted)" />
+          <span title={`Share of the area within ${coverageRadius(frame.bounds, trace.vehicles.length)} min of a vehicle`}>
+            <Stat label="covered" value={`${Math.round(coveredShare(frame.bounds, frame) * 100)}%`} color="var(--color-muted)" />
           </span>
         )}
         <Stat label="busy" value={`${s.busy}/${trace.vehicles.length}`} color="var(--color-muted)" />

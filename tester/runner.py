@@ -5,6 +5,7 @@ from __future__ import annotations
 import difflib
 import shlex
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -43,16 +44,27 @@ def load_solvers(path: Path = SOLVERS_FILE) -> dict[str, str]:
 
 def build_argv(command: str, input_path: Path) -> list[str]:
     """Substitutes {input} with the input path, or appends it if there's no placeholder."""
-    parts = shlex.split(command)
+    lexer = shlex.shlex(command, posix=True)
+    # Native Windows paths contain backslashes, not shell escape sequences.
+    if sys.platform == "win32":
+        lexer.escape = ""
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    parts = list(lexer)
     if any("{input}" in p for p in parts):
-        return [p.replace("{input}", str(input_path)) for p in parts]
-    return parts + [str(input_path)]
+        return [p.replace("{input}", input_path.as_posix()) for p in parts]
+    return parts + [input_path.as_posix()]
 
 
 def run_solver(command: str, input_path: Path, timeout: float) -> RunOutcome:
     start = time.perf_counter()
     try:
-        proc = subprocess.run(build_argv(command, input_path), cwd=ROOT, capture_output=True,
+        argv = build_argv(command, input_path)
+        # Windows may resolve plain python to the base interpreter even when
+        # this bench runs in a venv. Keep generic Python commands in this env.
+        if argv[0] in ("python", "python3"):
+            argv[0] = sys.executable
+        proc = subprocess.run(argv, cwd=ROOT, capture_output=True,
                               text=True, timeout=timeout)
     except subprocess.TimeoutExpired as e:
         out = e.stdout.decode() if isinstance(e.stdout, bytes) else (e.stdout or "")

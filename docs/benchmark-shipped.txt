@@ -1,0 +1,177 @@
+2 solvers x 28 inputs
+
+solver  valid  expected  avg_resp  max_resp  avg_delay  drive_min  veh_used  wins  secs
+-----------------------------------------------------------------------------------------
+milp    28/28  1/3       107.82    710       80.81      23294      90        23    198.78
+greedy  28/28  1/3       113.02    729       86.01      24216      90        10    8.57
+
+== brief_1_vehicle ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      DIFF      48.00     105       88         1
+milp    ok      DIFF      48.00     105       88         1
+
+== brief_2_vehicles ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      DIFF      14.67     35        88         2
+milp    ok      DIFF      14.67     35        88         2
+
+== brief_small ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      match     3.50      5         14         1
+milp    ok      match     3.50      5         14         1
+
+== edge_cases ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         8.00      20        92         2
+milp    ok      -         8.00      20        92         2
+
+== big_fleet_1 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         35.73     69        4426       10
+milp    ok      -         35.54     70        4504       10
+
+== big_fleet_2 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         38.83     96        3584       10
+milp    ok      -         38.33     98        3478       10
+
+== big_fleet_3 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         38.50     102       4002       10
+milp    ok      -         36.65     102       3772       10
+
+== burst_1 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         73.58     133       256        3
+milp    ok      -         73.08     134       232        3
+
+== burst_2 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         70.67     124       286        3
+milp    ok      -         70.17     124       280        3
+
+== burst_3 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         60.42     137       268        3
+milp    ok      -         54.08     112       206        3
+
+== clustered_1 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         32.03     88        874        4
+milp    ok      -         27.17     60        766        4
+
+== clustered_2 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         19.93     35        684        4
+milp    ok      -         20.03     36        682        4
+
+== clustered_3 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         26.20     54        890        4
+milp    ok      -         26.30     51        874        4
+
+== light_day_1 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         32.20     59        780        3
+milp    ok      -         32.35     63        798        3
+
+== light_day_2 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         26.65     65        760        3
+milp    ok      -         25.40     67        724        3
+
+== light_day_3 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         38.70     83        698        3
+milp    ok      -         39.10     92        668        3
+
+== one_axis_1 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         20.87     42        150        2
+milp    ok      -         17.87     37        132        2
+
+== one_axis_2 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         15.67     37        158        2
+milp    ok      -         11.13     24        138        2
+
+== one_axis_3 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         18.00     42        168        2
+milp    ok      -         14.20     33        154        2
+
+== overloaded_1 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         391.30    719       918        2
+milp    ok      -         391.02    710       906        2
+
+== overloaded_2 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         376.27    729       976        2
+milp    ok      -         326.82    668       852        2
+
+== overloaded_3 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         335.50    654       836        2
+milp    ok      -         335.38    665       842        2
+
+== rush_hour_1 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         194.57    379       688        3
+milp    ok      -         194.57    379       688        3
+
+== rush_hour_2 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         197.93    408       748        3
+milp    ok      -         195.87    385       694        3
+
+== rush_hour_3 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         214.33    426       772        3
+milp    ok      -         222.83    446       820        3
+
+== single_vehicle_1 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         93.80     155       304        1
+milp    ok      -         69.27     161       258        1
+
+== single_vehicle_2 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         116.27    237       378        1
+milp    ok      -         68.27     240       276        1
+
+== single_vehicle_3 ==
+solver  status  expected  avg_resp  max_resp  drive_min  veh_used
+-----------------------------------------------------------------
+greedy  ok      -         93.67     200       330        1
+milp    ok      -         70.27     181       268        1
+
+avg_resp/max_resp: minutes from call to job start | avg_delay: minutes beyond a free vehicle leaving base
+drive_min: total fleet driving | wins: inputs where it had the best avg_resp | metrics count valid runs only

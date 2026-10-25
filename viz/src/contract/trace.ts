@@ -62,6 +62,20 @@ export interface Trace {
   metrics?: Record<string, number> | null
   /** The raw printed schedule, for the event log. */
   log?: TraceLogLine[]
+  /** Optional native dispatch diagnostics. Proof applies to a replan, not the full online day. */
+  dispatch?: {
+    mapHistory: { time: number; bounds: [number, number, number, number] }[]
+    coverage?: { time: number; busyAnchors: { vehicle: number; x: number; y: number; available: number }[] }[]
+    plans: {
+      algorithm: string
+      status: string
+      primaryOptimal: boolean
+      lexicographicOptimal: boolean
+      gap: number | null
+      seconds: number
+      fallbackReason: string | null
+    }[]
+  }
 }
 
 export interface ManifestScenario {
