@@ -196,6 +196,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     solvers = load_solvers()
+    # Native traces preserve standby travel, which the legacy text format cannot express.
+    solvers["abdullah"] = f'"{sys.executable}" -m tools.abdullah_trace {{input}}'
     if args.only:
         wanted = args.only.split(",")
         solvers = {n: c for n, c in solvers.items() if n in wanted}
@@ -217,11 +219,17 @@ def main(argv: list[str] | None = None) -> int:
         entry = {"id": path.stem, "label": path.stem.replace("_", " "), "group": _group(path),
                  "vehicles": num_vehicles, "calls": len(calls), "traces": {}}
         for name, command in solvers.items():
+            if command.startswith("python3 "):
+                command = f'"{sys.executable}" ' + command[len("python3 "):]
             run = run_solver(command, path, args.timeout)
             if not run.ok:
                 print(f"  {name} on {path.stem}: failed ({run.stderr.strip()[-200:]})", file=sys.stderr)
                 continue
-            trace = build_trace(name, path.stem, text, run.stdout, entry["label"], entry["group"])
+            if name == "abdullah":
+                trace = json.loads(run.stdout)
+                trace["scenario"].update(label=entry["label"], group=entry["group"])
+            else:
+                trace = build_trace(name, path.stem, text, run.stdout, entry["label"], entry["group"])
             rel = f"{path.stem}/{name}.json"
             (args.out / path.stem).mkdir(parents=True, exist_ok=True)
             (args.out / rel).write_text(json.dumps(trace, separators=(",", ":")))

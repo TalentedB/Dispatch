@@ -48,6 +48,13 @@ npm run dev        # http://localhost:5173
 
 ## Trace contract
 
+The algorithm picker also includes **Abdullah · adaptive posts**, imported from
+the `abdullah` branch. `npm run traces` exports its native traces alongside the
+four text-format baselines. Standby moves appear as `reposition` in all views;
+they remain interruptible by calls. The active source policy is greedy with
+adaptive posts; its MILP batching is disabled. See [fleet notes](../fleet/README.md)
+for provenance, validation and comparison caveats.
+
 Every pane renders a **trace**: one algorithm's run on one scenario. Types:
 [`src/contract/trace.ts`](src/contract/trace.ts). Schema id `uvec.trace/v1`.
 
