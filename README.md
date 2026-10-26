@@ -5,9 +5,10 @@ emergency calls on a city grid, decide which vehicle answers each call and where
 vehicles wait. Calls are only known once they come in (online dispatch). Travel is
 Manhattan distance, 1 block = 1 minute.
 
-Our final algorithm, **Strategy 4: adaptive hybrid**, combines exact DP/MILP assignment
-with adaptive coverage, and has the lowest average response time of the eight
-algorithms we built.
+Our submission is **Submission: Adaptive + DP + MILP**, implemented in `dispatch/`.
+It combines adaptive ambulance deployment with exact dynamic programming for small
+known queues and time-limited MILP for larger queues. Calls are optimized together
+using only reported information, while accepted emergency assignments remain locked.
 
 ## Setup
 
@@ -22,7 +23,7 @@ cd viz && npm ci                                     # visualizer
 ## Run
 
 ```bash
-python -m dispatch inputs/brief_2_vehicles.txt                     # Strategy 4 (final algorithm)
+python -m dispatch inputs/brief_2_vehicles.txt                     # Submission: Adaptive + DP + MILP (our solution)
 python -m dispatch inputs/brief_2_vehicles.txt --no-staging        # same planner, vehicles wait at base
 python3 -m solver inputs/brief_2_vehicles.txt --mode hungarian     # baselines: greedy, closest_idle, nearest_neighbor, hungarian
 python3 bench.py                                                   # every solver x every input, checked and scored
@@ -70,13 +71,13 @@ call comes in, wrong drive or job times, switching jobs mid-route, unserved call
 | Hungarian matching | Free vehicles and waiting calls matched to minimise total distance |
 | Abdullah: adaptive posts | Earliest arrival using (x, y, minutes until free); idle vehicles spread to posts |
 | Hybrid DP/MILP | Exact DP for small queues, MILP (HiGHS) for larger ones; waits at base |
-| **Strategy 4: adaptive hybrid** | Hybrid DP/MILP plus adaptive coverage that repositions idle vehicles |
+| **Submission: Adaptive + DP + MILP** | Hybrid DP/MILP plus adaptive coverage that repositions idle vehicles |
 
 ## Structure
 
 | Path | What it is |
 |---|---|
-| `dispatch/` | Strategy 4: event-driven simulation, DP/MILP planner, adaptive coverage |
+| `dispatch/` | Our submission: event-driven simulation, DP/MILP planner, adaptive coverage |
 | `fleet/` | Abdullah's adaptive-posts algorithm |
 | `solver/` | Baseline algorithms (`solver/algorithms/`, one file each) |
 | `tester/`, `bench.py`, `check.py` | Input parsing, output checker, benchmark runner |
@@ -94,7 +95,7 @@ arriving. Every schedule passed the checker.
 
 | Algorithm | Mean response (min) | Worst response (min) | Scenarios won |
 |---|---|---|---|
-| **Strategy 4: adaptive hybrid** | **78.4** | 648 | **21** |
+| **Submission: Adaptive + DP + MILP** | **78.4** | 648 | **21** |
 | Hybrid DP/MILP, base deployment | 79.3 | **638** | 7 |
 | Abdullah: adaptive posts | 81.0 | 665 | 8 |
 | Nearest neighbour | 88.2 | 712 | 7 |
@@ -107,8 +108,8 @@ Ties count as a win for each algorithm involved.
 
 ## Conclusions
 
-- **Strategy 4 is the best overall:** lowest mean response (78.4 min), and it wins 21 of
-  30 scenarios.
+- **Our submission has the lowest measured mean response:** 78.4 minutes, winning
+  21 of 30 scenarios.
 - **It's much faster to respond than the simple approaches:** mean response is 66% lower
   than closest idle and 38% lower than greedy.
 - **It plans around busy vehicles:** it knows when each ambulance will be free, so a

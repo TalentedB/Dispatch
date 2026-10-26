@@ -3,7 +3,7 @@
     python3 tools/export_viz.py                          # every solver x every input
     python3 tools/export_viz.py --only greedy,hungarian --inputs "inputs/brief_*.txt"
 
-Solvers come from solvers.txt, plus the staged Strategy 4 configuration.
+Solvers come from solvers.txt, plus our Submission: Adaptive + DP + MILP configuration (strategy4).
 Dispatch supplies exact native traces; other solvers' printed schedules are
 replayed into traces. Both include per-vehicle grid paths and the independent
 checker's verdict and metrics. The trace format is documented in

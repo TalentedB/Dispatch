@@ -21,9 +21,9 @@ const KNOWN: Record<string, Omit<AlgorithmMeta, 'id'>> = {
     color: themeColor('series-5'),
   },
   strategy4: {
-    label: 'Strategy 4: adaptive hybrid',
-    short: 'Strategy 4',
-    description: 'Online DP/MILP scheduling with locked emergency commitments and adaptive resting coverage. Only reported calls inform decisions.',
+    label: 'Submission: Adaptive + DP + MILP',
+    short: 'Submission',
+    description: 'Our submission: online DP/MILP scheduling with locked emergency commitments and adaptive resting coverage. Only reported calls inform decisions.',
     color: themeColor('series-5'),
   },
   milp: {

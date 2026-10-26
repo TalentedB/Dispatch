@@ -49,7 +49,7 @@ def main():
         "--staging",
         dest="staging",
         action="store_true",
-        help="Strategy 4 dynamic positioning (default)",
+        help="Submission adaptive positioning (default)",
     )
     deployment.add_argument(
         "--no-staging",

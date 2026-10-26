@@ -20,14 +20,15 @@ npm run dev        # http://localhost:5173
 `npm run traces` is `python -m tools.export_viz` from the repo root. Use
 `--only greedy,hungarian` or `--inputs "inputs/brief_*.txt"` to limit it.
 
-The exporter also includes **Strategy 4: adaptive hybrid**. Install the root
-`requirements-dev.txt` in your active Python environment first. It uses exact
+The exporter also includes our solution, **Submission: Adaptive + DP + MILP**
+(internal algorithm ID `strategy4`, retained for existing traces and commands).
+Install the root `requirements-dev.txt` in your active Python environment first. It uses exact
 small-queue dynamic programming and time-limited MILP for larger known queues,
 with adaptive staging. Emergency commitments remain locked and future calls
 are hidden from the online planner. `milp` is the same hybrid planner with base
 deployment; `dispatch_greedy` is its event-driven greedy baseline. The original
 four mainline algorithms are preserved.
-Strategy 4 keeps free vehicles at coverage-selected resting sites after its
+Our submission keeps free vehicles at coverage-selected resting sites after its
 last known job. There is no end-of-file hospital return. A movement toward the
 hospital can still be a legitimate coverage relocation, especially with one free
 vehicle and a city centered on base. Base-deployment comparisons retain returns.
@@ -42,7 +43,7 @@ npm run build
 npm run lint
 ```
 
-Select Strategy 4 in either pane, or drop a standalone trace onto the app.
+Select **Submission: Adaptive + DP + MILP** in either pane, or drop a standalone trace onto the app.
 Native traces preserve call IDs and the actual x-then-y movement history,
 including interrupted staging/return trips and zero-duration jobs. The existing
 playback engine already renders `reposition` segments. Program runtime is measured
