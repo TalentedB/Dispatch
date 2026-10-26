@@ -414,8 +414,12 @@ time. Dispatches and completions that change the free fleet trigger an immediate
 coverage recalculation. The cooldown suppresses refinements only while that fleet
 is unchanged; planned availability checks also bypass it. Every recalculation
 still requires the configured objective improvement to move. Obsolete wakeups are
-ignored; no refresh loop remains once all vehicles are free. Coverage retains
-its shared computation allowance and holds targets when that allowance is exhausted.
+ignored; no refresh loop remains once all vehicles are free. Coverage uses
+the remaining shared run budget, with each finite-budget coverage refinement
+capped at 50 milliseconds. Coverage can borrow unused incident capacity rather
+than freezing after a fixed 20-percent lifetime quota. It holds targets only
+when the shared optimization budget is exhausted. The cap is a search deadline;
+model setup and a vectorized evaluation already in progress can overrun it.
 Actual physical
 positions are evaluated at the decision time. Repositioning remains interruptible;
 accepted emergency travel and service remain locked. All vehicles start at base
@@ -480,8 +484,9 @@ fallback remains a supported, visible outcome. Computation time is tracked but
 does not advance the simulated emergency clock. The whole-run application budget and external benchmark
 timeout default to 20 seconds. The CLI deducts startup time and reserves one
 second for output; simulation stops admitting optimization work by 90 percent
-of its remaining budget. Coverage has a 20-percent cap; incident planning can
-use unused coverage time. DP allowance scales with V*3^J, capped at one second.
+of its remaining budget. Coverage and incident planning share the unused budget;
+each coverage search receives at most 50 milliseconds. DP allowance scales with
+V*3^J, capped at one second.
 MILP allowance scales with an exponentially smoothed measured model-construction
 cost (excluding one-off solver import/setup), with a 0.4-second floor and
 two-second ceiling. Each decision can use at most 40 percent of remaining time.

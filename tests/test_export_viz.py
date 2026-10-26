@@ -16,6 +16,22 @@ _spec.loader.exec_module(export_viz)
 ALL_INPUTS = sorted((ROOT / "inputs").glob("*.txt")) + sorted((ROOT / "inputs" / "generated").glob("*.txt"))
 
 
+def test_saved_scenarios_have_input_fixtures_for_default_trace_regeneration():
+    import json
+    from tester.inputs import parse_input
+
+    trace_root = ROOT / "viz/public/traces"
+    manifest = json.loads((trace_root / "manifest.json").read_text())
+    inputs = {path.stem: path for path in ALL_INPUTS}
+    for scenario in manifest["scenarios"]:
+        assert scenario["id"] in inputs, f"Missing input fixture: {scenario['id']}"
+        fleet_size, calls = parse_input(inputs[scenario["id"]].read_text())
+        trace = json.loads((trace_root / scenario["traces"]["strategy4"]).read_text())
+        assert fleet_size == trace["scenario"]["vehicles"]
+        assert [dict(id=call.index, time=call.time, x=call.location.x,
+                     y=call.location.y, duration=call.duration) for call in calls] == trace["calls"]
+
+
 def trace_for(path: Path, mode: str) -> dict:
     text = path.read_text()
     output = "\n".join(render(run(*parse_input(text), make_algorithm(mode))))

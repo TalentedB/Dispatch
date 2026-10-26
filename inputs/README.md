@@ -6,6 +6,11 @@
 - `generated/` — random scenarios from `tools/generate_inputs.py` (no expected output;
   scored by metrics only).
 
+`generated/city_100x100_1.txt` preserves the eight-vehicle, 200-call scenario
+previously shipped only as visualizer traces. Its input was recovered exactly
+from the call records, which agree across all eight saved algorithms. Keeping
+the fixture here includes this scenario in normal tests and trace regeneration.
+
 ## Fixes to the brief's printed examples
 
 The brief's example outputs contain two arithmetic slips. Our `.expected` files

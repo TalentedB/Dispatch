@@ -176,7 +176,9 @@ The bench and diagnostic wrapper enforce a 20-second timeout per complete
 simulation by default. `--run-time-limit` controls the application budget and
 `--timeout` controls the benchmark process deadline. Startup/output reserves and
 shared incident/coverage allowances keep individual solves from consuming the
-entire run. When budget is exhausted, coverage holds existing targets and
+entire run. Coverage borrows unused incident capacity in searches capped at
+50 milliseconds, rather than stopping after a separate lifetime quota.
+When the shared budget is exhausted, coverage holds existing targets and
 incident scheduling explicitly reports validated retained/greedy fallback. Diagnostic reports record
 the selected limits, runtime, proof flags, gaps, and fallback use after every run.
 The shipped-scenario correctness tests explicitly retain their original

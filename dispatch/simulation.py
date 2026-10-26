@@ -17,7 +17,7 @@ from .planning import optimize
 from .validation import validate_execution, validate_plan
 
 OPTIMIZATION_BUDGET_FRACTION = 0.9
-COVERAGE_BUDGET_FRACTION = 0.2
+MAX_COVERAGE_ALLOWANCE_SECONDS = 0.05
 MAX_DECISION_BUDGET_FRACTION = 0.4
 MIN_PLANNING_SECONDS = 0.01
 INITIAL_MODEL_COST_RATE = 0.0001
@@ -124,7 +124,14 @@ class _ComputationBudget:
         return max(0.0, min(allocation_remaining, deadline_remaining))
 
     def coverage_allowance(self) -> float:
-        return self.remaining(COVERAGE_BUDGET_FRACTION, self.coverage_seconds)
+        remaining_seconds = self.remaining(
+            OPTIMIZATION_BUDGET_FRACTION, self.incident_seconds + self.coverage_seconds
+        )
+        if math.isinf(remaining_seconds):
+            return remaining_seconds
+        # Share unused incident capacity, but bound each coverage refinement so
+        # early fleet changes cannot consume the entire run's planning budget.
+        return min(MAX_COVERAGE_ALLOWANCE_SECONDS, remaining_seconds)
 
     def incident_allowance(
         self, pending_count: int, vehicle_count: int, config: SolverConfig

@@ -362,3 +362,15 @@ def test_ten_vehicle_initial_coverage_does_not_collapse_to_a_line():
     assert len(set(plan.targets.values())) == 10
     assert min(point.y for point in plan.targets.values()) < 0
     assert max(point.y for point in plan.targets.values()) > 0
+
+
+def test_coverage_can_use_remaining_run_budget_after_its_initial_share_is_spent(monkeypatch):
+    import dispatch.simulation as module
+
+    monkeypatch.setattr(module, "perf_counter", lambda: 4.1)
+    budget = module._ComputationBudget(
+        runtime_limit=20, started_at=0, incident_seconds=0.1, coverage_seconds=4,
+    )
+    assert 0 < budget.coverage_allowance() <= 0.05
+    monkeypatch.setattr(module, "perf_counter", lambda: 18)
+    assert budget.coverage_allowance() == 0
