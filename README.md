@@ -105,31 +105,20 @@ arriving. Every schedule passed the checker.
 
 Ties count as a win for each algorithm involved.
 
-We also isolated the two halves of the problem on 29 tests
-(`python -m tools.benchmark_pathfinding`, `python -m tools.benchmark_deployment`):
+## Conclusions
 
-| Pathfinding (deployment fixed) | Mean (min) | | Deployment (pathfinding fixed) | Mean (min) |
-|---|---|---|---|---|
-| Manhattan | 113.4 | | Origin + static rest | 76.4 |
-| Manhattan + Z (minutes until free) | 75.6 | | Dynamic + static rest | 72.8 |
-| Manhattan + Z + MILP | **72.6** | | Dynamic + dynamic rest | **72.8** |
-
-## Conclusions: what worked
-
-- **Strategy 4 is the best overall:** it has the lowest mean response and wins 21 of 30
-  scenarios.
-- **Accounting for busy vehicles matters most:** the Z term, minutes until a vehicle
-  is free, cuts mean response by a third.
-- **MILP adds a further gain:** batching several waiting calls into one optimal plan
-  brings it down a few more percent. It costs about 73 ms per call, which is fast
-  enough for real time.
-- **Spreading vehicles out beats waiting at the hospital,** by about 5%.
-- **Continuous rebalancing roughly matches a single spread on average,** and helps the
-  worst case and larger fleets.
-- **What didn't help much:** reacting only to free vehicles. Closest idle is 3x worse
-  than the best, because it ignores a busy vehicle that is about to finish nearby.
-- **Overloaded scenarios still end up with long waits.** With 2 vehicles and 40 calls,
-  no strategy can avoid queues; the fix there is more vehicles.
+- **Strategy 4 is the best overall:** lowest mean response (78.4 min), and it wins 21 of
+  30 scenarios.
+- **It's much faster to respond than the simple approaches:** mean response is 66% lower
+  than closest idle and 38% lower than greedy.
+- **It plans around busy vehicles:** it knows when each ambulance will be free, so a
+  nearby crew about to finish can take the next call.
+- **It optimises assignments in real time:** waiting calls are planned together with
+  DP/MILP optimisation, in about 73 ms per call.
+- **It keeps the city covered:** idle ambulances move to where they can reach the most
+  of the map, which beats parking them at the hospital.
+- **It's reliable:** every schedule passes the independent checker, and it never uses
+  calls that haven't come in yet.
 
 ## Third-party code
 
