@@ -144,7 +144,7 @@ function Vehicle({ v, heightAt }: { v: VehicleFrame; heightAt: (x: number, y: nu
   )
 }
 
-function FitCamera({ bounds }: { bounds: Bounds }) {
+function FitCamera({ bounds, exporting }: { bounds: Bounds; exporting?: boolean }) {
   const { get, size, gl } = useThree()
   const hasFitted = useRef(false)
   const { minX, maxX, minY, maxY } = bounds
@@ -165,7 +165,8 @@ function FitCamera({ bounds }: { bounds: Bounds }) {
       hasFitted.current = true
       update(target)
     } else {
-      cancel = animateCamera([...camera.position.toArray(), camera.zoom], target, update)
+      cancel = animateCamera([...camera.position.toArray(), camera.zoom], target, update,
+        exporting || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     }
     // User input takes ownership before OrbitControls handles the same event.
     gl.domElement.addEventListener('pointerdown', cancel, true)
@@ -175,11 +176,24 @@ function FitCamera({ bounds }: { bounds: Bounds }) {
       gl.domElement.removeEventListener('pointerdown', cancel, true)
       gl.domElement.removeEventListener('wheel', cancel, true)
     }
-  }, [minX, maxX, minY, maxY, get, gl, size.width, size.height])
+  }, [minX, maxX, minY, maxY, get, gl, size.width, size.height, exporting])
   return null
 }
 
-function Isometric({ prepared, frame, overlays, options }: ViewProps) {
+// Render on capture even when the browser has suspended its animation loop.
+function CaptureFrame() {
+  const { gl, scene, camera } = useThree()
+  useLayoutEffect(() => {
+    const render = (event: Event) => {
+      if ((event as CustomEvent<HTMLElement>).detail?.contains(gl.domElement)) gl.render(scene, camera)
+    }
+    window.addEventListener('dispatch:capture-frame', render)
+    return () => window.removeEventListener('dispatch:capture-frame', render)
+  }, [gl, scene, camera])
+  return null
+}
+
+function Isometric({ prepared, frame, overlays, options, exporting }: ViewProps) {
   const bounds = frame.bounds
   const field = (options.surface ?? 'all') as Field
   const { distAt, heightAt, range, k } = useField(frame.bounds, frame.vehicles, field)
@@ -189,10 +203,11 @@ function Isometric({ prepared, frame, overlays, options }: ViewProps) {
 
   return (
     <div className="absolute inset-0">
-      <Canvas orthographic dpr={[1, 2]} camera={{ near: -1000, far: 1000, position: [50, 50, 50] }}>
+      <Canvas orthographic gl={{ preserveDrawingBuffer: true }} dpr={[1, 2]} camera={{ near: -1000, far: 1000, position: [50, 50, 50] }}>
+        <CaptureFrame />
         <color attach="background" args={[themeColor('map-paper')]} />
         <fog attach="fog" args={[themeColor('map-paper'), 200, 400]} />
-        <FitCamera bounds={bounds} />
+        <FitCamera bounds={bounds} exporting={exporting} />
         <ambientLight intensity={0.55} />
         <hemisphereLight args={[themeColor('map-light'), themeColor('map-grid'), 0.5]} />
         <directionalLight position={[30, 60, 20]} intensity={1.6} />

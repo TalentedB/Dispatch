@@ -5,6 +5,7 @@ import { addTraceFiles, dataStore, loadManifest, useScenarioTraces, useScenarios
 import { clockActions, useClockDriver } from '@/playback/clock'
 import { Pane, type PaneState } from '@/components/Pane'
 import { Transport } from '@/components/Transport'
+import { ExportGif } from '@/components/ExportGif'
 import { Inspector } from '@/components/Inspector'
 import { Leaderboard } from '@/components/Leaderboard'
 import { Button } from '@/components/ui/button'
@@ -210,6 +211,12 @@ export default function App() {
         </main>
 
         <Transport traces={visible} />
+        <div className="border-t px-4 py-2"><ExportGif
+          panes={scenario ? [
+            ...(a.trace ? [{ state: panes[0], trace: a.trace, algorithms: scenario.algorithms }] : []),
+            ...(split && b.trace ? [{ state: panes[1], trace: b.trace, algorithms: scenario.algorithms }] : []),
+          ] : []}
+          ready={!!a.trace && (!split || !!b.trace)} /></div>
 
         {demo && (
           <div className="demo-hud">

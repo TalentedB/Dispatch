@@ -51,6 +51,23 @@ per process and shown separately from response delays. Optional `dispatch`
 diagnostics retain per-replan proof statuses, gaps, fallback reasons and reported
 map bounds; an optimal replan does not establish a globally optimal online day.
 
+Use **Export GIF** below playback to download the selected run as a looping
+animation at the selected **Playback speed**, measured in simulated minutes per
+second. A 1,000-minute run at 10 min/s produces a 100-second GIF, plus a 0.1-second
+hold on its final state. Export processes frames offscreen using the same React
+panes, styles, views, layers, and statistics as playback. Both panes appear in split
+view. The visible player keeps its own time and remains usable during processing.
+Export snapshots the run, pane settings, and speed when you click the button.
+
+Frames cover the full time span at a base rate of 10 fps, with extra frames at
+call reports and every segment's boundaries and midpoint. Short segments therefore
+appear even when they fall between regular samples. Frame delays follow simulation
+time and use GIF's 10ms precision, with a 20ms minimum for browser playback. If a
+speed cannot represent every segment within those limits, export asks for a slower
+playback speed instead of dropping segments. The image keeps the panes' aspect ratio,
+scaled down only when needed to fit 1280 × 900 pixels. GIF colors are limited to
+256 per frame. Export runs locally and supports cancellation.
+
 Exports are incremental: `--only` updates selected traces while retaining other
 algorithms, scenarios and files. Failed runs return a nonzero exit status and are
 removed from that scenario's manifest entries. The exporter runs each solver

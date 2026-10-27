@@ -18,6 +18,7 @@ export interface ViewOption {
 }
 
 export interface ViewProps {
+  exporting?: boolean
   prepared: Prepared
   frame: Frame
   /** Enabled overlay ids for this pane. */

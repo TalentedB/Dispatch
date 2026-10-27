@@ -31,9 +31,10 @@ interface Props {
   algorithms: string[]
   trace: Trace | null
   error: string | null
+  time?: number
 }
 
-export function Pane({ state, onChange, algorithms, trace, error }: Props) {
+export function Pane({ state, onChange, algorithms, trace, error, time }: Props) {
   const view = viewById(state.view)
   const meta = algorithmMeta(state.algorithm ?? '', trace?.algorithm)
   const options = Object.fromEntries((view.options ?? []).map((o) => [o.id, state.options[view.id]?.[o.id] ?? o.default]))
@@ -141,7 +142,7 @@ export function Pane({ state, onChange, algorithms, trace, error }: Props) {
 
       <div className="pane-canvas">
         {trace ? (
-          <PaneBody trace={trace} state={state} options={options} accent={meta.color} />
+          <PaneBody trace={trace} state={state} options={options} accent={meta.color} time={time} />
         ) : (
           <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">
             {error ? <span role="alert" className="text-destructive">{error}</span> : <span role="status" className="loading-state"><Loader2 className="animate-spin" /> Loading simulation…</span>}
@@ -152,8 +153,8 @@ export function Pane({ state, onChange, algorithms, trace, error }: Props) {
   )
 }
 
-function PaneBody({ trace, state, options, accent }: { trace: Trace; state: PaneState; options: Record<string, string>; accent: string }) {
-  const t = clock.use((s) => s.time)
+function PaneBody({ trace, state, options, accent, time }: { trace: Trace; state: PaneState; options: Record<string, string>; accent: string; time?: number }) {
+  const t = clock.use((s) => time ?? s.time)
   const prepared = prepare(trace)
   const frame = useMemo(() => sampleFrame(prepared, t), [prepared, t])
   const View = viewById(state.view).component
@@ -163,7 +164,7 @@ function PaneBody({ trace, state, options, accent }: { trace: Trace; state: Pane
   return (
     <>
       <div className="relative min-h-0 flex-1">
-        <View prepared={prepared} frame={frame} overlays={state.overlays} options={options} accent={accent} />
+        <View prepared={prepared} frame={frame} overlays={state.overlays} options={options} accent={accent} exporting={time !== undefined} />
       </div>
       <div className="pane-stats">
         <Stat label="waiting" value={s.waiting} color={CALL_STATUS.waiting.color} pulse={s.waiting > 0} />

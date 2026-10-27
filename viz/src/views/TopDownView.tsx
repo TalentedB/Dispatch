@@ -275,7 +275,7 @@ function VehicleMarker({ v, px }: { v: VehicleFrame; px: number }) {
   )
 }
 
-function TopDown({ prepared, frame, overlays }: ViewProps) {
+function TopDown({ prepared, frame, overlays, exporting }: ViewProps) {
   const ref = useRef<HTMLDivElement>(null)
   const { width, height } = useSize(ref)
   const { minX, maxX, minY, maxY } = frame.bounds
@@ -305,10 +305,11 @@ function TopDown({ prepared, frame, overlays }: ViewProps) {
       cancelTransition.current = animateCamera(
         [previous.scale, previous.cx, previous.cy], [target.scale, target.cx, target.cy],
         ([scale, cx, cy]) => updateView({ scale, cx, cy }),
+        exporting || window.matchMedia('(prefers-reduced-motion: reduce)').matches,
       )
     }
     return () => cancelTransition.current()
-  }, [fit, minX, maxX, minY, maxY, width, height, updateView])
+  }, [fit, minX, maxX, minY, maxY, width, height, updateView, exporting])
   const scale = view.scale
   const px = 1 / scale
   const shift = (inset.bottom - inset.top) / 2 / scale
