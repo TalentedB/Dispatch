@@ -1,127 +1,174 @@
-# UVEC 2026: Emergency Vehicle Dispatcher
+# Dispatch
 
-Team localhost. Given a fleet of ambulances at a hospital at (0, 0) and a day of
-emergency calls on a city grid, decide which vehicle answers each call and where idle
-vehicles wait. Calls are only known once they come in (online dispatch). Travel is
-Manhattan distance, 1 block = 1 minute.
+An emergency vehicle dispatch simulator built by Team localhost for UVEC 2026.
+It decides which ambulance should answer each call and where available vehicles
+should wait for the next emergency.
 
-Our submission is **Submission: Adaptive + DP + MILP**, implemented in `dispatch/`.
-It combines adaptive ambulance deployment with exact dynamic programming for small
-known queues and time-limited MILP for larger queues. Calls are optimized together
-using only reported information, while accepted emergency assignments remain locked.
+![Dispatch replay of 10 ambulances responding to 80 calls on a city grid](docs/assets/dispatch-demo.gif)
 
-## Setup
+*A replay of the `big_fleet_2` scenario using our adaptive dispatch solver.
+The map shows ambulance movements, emergency calls, and response coverage.*
 
-Python 3.10+ and Node 24+.
+## The problem
 
-```bash
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt                  # highspy (MILP), NumPy, pytest
-cd viz && npm ci                                     # visualizer
-```
+Sending the nearest ambulance sounds straightforward until every nearby vehicle
+is busy. A vehicle finishing a job soon might reach a new call first. Moving an
+idle ambulance can shorten the next response, but it can also leave another area
+without cover.
 
-## Run
+Dispatch models these decisions on a city grid. Ambulances start at a hospital,
+travel takes one minute per block, and calls become known only when they arrive.
+The solver must work with the information available at that moment.
 
-```bash
-python -m dispatch inputs/brief_2_vehicles.txt                     # Submission: Adaptive + DP + MILP (our solution)
-python -m dispatch inputs/brief_2_vehicles.txt --no-staging        # same planner, vehicles wait at base
-python3 -m solver inputs/brief_2_vehicles.txt --mode hungarian     # baselines: greedy, closest_idle, nearest_neighbor, hungarian
-python3 bench.py                                                   # every solver x every input, checked and scored
-python3 check.py inputs/brief_small.txt my_output.txt              # validate one output
-```
+## How it works
 
-Visualizer (replays the schedules on a city map, with a leaderboard):
+Our solver combines assignment planning with adaptive positioning:
 
-```bash
-cd viz
-npm run traces   # run every solver on every input -> public/traces/
-npm run dev      # http://localhost:5173  (press F for full-screen demo mode)
-```
+1. It tracks reported calls and when each ambulance will become available.
+2. It plans waiting calls together. Small queues use exact dynamic programming.
+   Larger queues use mixed-integer optimization through HiGHS, with a time limit.
+3. It moves available ambulances to standby locations that improve response
+   coverage as demand changes.
 
-## Tests
+Once an ambulance accepts an emergency assignment, that commitment stays fixed.
+The planner never reads future calls.
 
-```bash
-python -m pytest -q          # 392 tests: checker, solvers, dispatch, coverage, trace export
-cd viz && npm test && npm run lint && npm run build
-```
-
-`tester/checker.py` replays every output and rejects rule violations: leaving before a
-call comes in, wrong drive or job times, switching jobs mid-route, unserved calls.
-
-## Scripts
-
-| Command | What it does |
-|---|---|
-| `python3 bench.py --detail` | Runs every solver in `solvers.txt` on every input; checks and scores each output |
-| `python3 tools/stress.py` | Compares the baseline modes on hundreds of random scenarios |
-| `python3 tools/generate_inputs.py --seeds 5` | Regenerates the random scenarios in `inputs/generated/` |
-| `python -m tools.export_viz --only strategy4` | Writes visualizer traces (all solvers if `--only` is left out) |
-| `python -m tools.benchmark_pathfinding` | Pathfinding comparison (deployment held fixed) |
-| `python -m tools.benchmark_deployment` | Deployment comparison (pathfinding held fixed) |
-| `python -m tools.benchmark_dispatch` | Detailed solver diagnostics for the hybrid |
-| `python -m dispatch <input> --trace t.json` | One trace file to drop onto the visualizer |
-
-## Algorithms
-
-| Algorithm | Idea |
-|---|---|
-| Closest idle, FCFS | Nearest free vehicle; calls queue until one frees up |
-| Greedy earliest arrival | Vehicle that can arrive soonest, including busy ones |
-| Nearest neighbour | Closest free vehicle; a freed vehicle takes the closest waiting call |
-| Hungarian matching | Free vehicles and waiting calls matched to minimise total distance |
-| Abdullah: adaptive posts | Earliest arrival using (x, y, minutes until free); idle vehicles spread to posts |
-| Hybrid DP/MILP | Exact DP for small queues, MILP (HiGHS) for larger ones; waits at base |
-| **Submission: Adaptive + DP + MILP** | Hybrid DP/MILP plus adaptive coverage that repositions idle vehicles |
-
-## Structure
-
-| Path | What it is |
-|---|---|
-| `dispatch/` | Our submission: event-driven simulation, DP/MILP planner, adaptive coverage |
-| `fleet/` | Abdullah's adaptive-posts algorithm |
-| `solver/` | Baseline algorithms (`solver/algorithms/`, one file each) |
-| `tester/`, `bench.py`, `check.py` | Input parsing, output checker, benchmark runner |
-| `tools/` | Input generator, trace exporter, benchmark scripts |
-| `inputs/` | Brief examples (with expected outputs), edge cases, 26 generated scenarios |
-| `viz/` | React visualizer (top-down city, 3D, timeline, leaderboard) |
-| `tests/` | pytest suite |
-| `docs/` | [Architecture and model](docs/ARCHITECTURE.md), [detailed benchmarks](docs/BENCHMARKS.md) |
+The visualizer replays the resulting schedules in top-down, 3D, and timeline
+views. You can compare algorithms side by side, inspect individual calls, and
+export a run as a GIF at the selected playback speed.
 
 ## Results
 
-All 30 test scenarios (944 calls), from the traces in `viz/public/traces/`, as shown in
-the visualizer's leaderboard. Response = minutes from a call coming in to an ambulance
-arriving. Every schedule passed the checker.
+Across **30 bundled scenarios and 944 calls**, our adaptive solver achieved a mean
+response time of **78.4 simulated minutes**. That is 66% lower than the closest-idle
+baseline and 38% lower than greedy earliest arrival.
 
-| Algorithm | Mean response (min) | Worst response (min) | Scenarios won |
-|---|---|---|---|
-| **Submission: Adaptive + DP + MILP** | **78.4** | 648 | **21** |
-| Hybrid DP/MILP, base deployment | 79.3 | **638** | 7 |
-| Abdullah: adaptive posts | 81.0 | 665 | 8 |
-| Nearest neighbour | 88.2 | 712 | 7 |
-| Hungarian matching | 88.4 | 712 | 7 |
-| Greedy earliest arrival | 127.3 | 729 | 3 |
-| Dispatch greedy, base deployment | 133.6 | 729 | 3 |
-| Closest idle, FCFS | 229.7 | 1247 | 3 |
+| Algorithm | Mean response, min | Scenarios won |
+|---|---:|---:|
+| **Adaptive dispatch, our submission** | **78.4** | **21** |
+| Hybrid planner, vehicles wait at base | 79.3 | 7 |
+| Adaptive posts | 81.0 | 8 |
+| Nearest neighbour | 88.2 | 7 |
+| Hungarian matching | 88.4 | 7 |
+| Greedy earliest arrival | 127.3 | 3 |
+| Dispatch greedy, vehicles wait at base | 133.6 | 3 |
+| Closest idle, first come first served | 229.7 | 3 |
 
-Ties count as a win for each algorithm involved.
+Response time measures the delay between a call arriving and an ambulance reaching
+it. Means include all 944 calls. Tied algorithms each receive a scenario win.
+These results describe the bundled grid simulations.
 
-## Conclusions
+All 240 schedules in this comparison passed the independent rule checker. It
+checks travel and service times, assignment commitments, and whether every call
+receives service.
 
-- **Our submission has the lowest measured mean response:** 78.4 minutes, winning
-  21 of 30 scenarios.
-- **It's much faster to respond than the simple approaches:** mean response is 66% lower
-  than closest idle and 38% lower than greedy.
-- **It plans around busy vehicles:** it knows when each ambulance will be free, so a
-  nearby crew about to finish can take the next call.
-- **It optimises assignments in real time:** waiting calls are planned together with
-  DP/MILP optimisation, in about 73 ms per call.
-- **It keeps the city covered:** idle ambulances move to where they can reach the most
-  of the map, which beats parking them at the hospital.
-- **It's reliable:** every schedule passes the independent checker, and it never uses
-  calls that haven't come in yet.
+The [benchmark notes](docs/BENCHMARKS.md) contain further experiments, runtime
+measurements, and limitations. The comparison above comes from the
+[bundled replay traces](viz/public/traces/manifest.json).
 
-## Third-party code
+## Try it locally
 
-[HiGHS/highspy](https://highs.dev/) (MIT) for MILP, NumPy (BSD-3), pytest (MIT).
-Visualizer packages are listed in [viz/README.md](viz/README.md#third-party-code).
+To explore the visualizer, install Node.js 24 or newer, then run:
+
+```bash
+git clone https://github.com/TalentedB/Dispatch.git
+cd Dispatch/viz
+npm ci
+npm run dev
+```
+
+Open the local URL printed in the terminal, usually `http://localhost:5173`.
+The repository includes replay data, so you can explore the scenarios without
+running the Python solvers. Press `F` for the full-screen demo view.
+
+### Run the solver
+
+Use Python 3.10 or newer. From the repository root, create a virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Activate it on macOS or Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+Or in Windows PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+Then install the dependencies and run an example:
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m dispatch inputs/brief_2_vehicles.txt
+```
+
+The solver prints each vehicle's schedule. Our submission appears in the
+visualizer as `Submission: Adaptive + DP + MILP` and uses the internal ID `strategy4`.
+
+### Compare and replay
+
+Run the benchmark to check and score every configured solver against every input:
+
+```bash
+python bench.py
+```
+
+Generate a trace for a single run, then load the JSON file in the visualizer:
+
+```bash
+python -m dispatch inputs/brief_2_vehicles.txt --trace run.json
+```
+
+To regenerate the visualizer's traces for all solvers and scenarios:
+
+```bash
+python -m tools.export_viz
+```
+
+See the [visualizer guide](viz/README.md) for playback controls, GIF export,
+trace generation, and the format for adding another algorithm.
+
+## Project guide
+
+| Location | Contents |
+|---|---|
+| [`dispatch/`](dispatch/) | Our dispatch planner, simulation, and adaptive coverage logic |
+| [`solver/`](solver/) | Baseline dispatch algorithms |
+| [`fleet/`](fleet/) | The adaptive-posts algorithm |
+| [`viz/`](viz/) | The React visualizer and bundled replay data |
+| [`tester/`](tester/) | Input parsing, schedule validation, and scoring |
+| [`inputs/`](inputs/) | Example, edge-case, and generated scenarios |
+| [`tools/`](tools/) | Trace export, input generation, and benchmark scripts |
+| [`tests/`](tests/) | Python tests |
+
+Read the [architecture and model](docs/ARCHITECTURE.md) for the simulation rules
+and planning approach.
+
+## Tests
+
+From the repository root, with the Python environment active:
+
+```bash
+python -m pytest -q
+```
+
+From `viz/`:
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+## Dependencies
+
+The solver uses [HiGHS](https://highs.dev/) through `highspy` for mixed-integer
+optimization and NumPy for numerical work. The visualizer uses React, TypeScript,
+and Three.js. See the [visualizer dependency list](viz/README.md#third-party-code)
+and [package manifest](viz/package.json) for its libraries.
